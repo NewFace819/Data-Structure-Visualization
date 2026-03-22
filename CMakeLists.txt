@@ -23,7 +23,7 @@ set(SOURCES
     src/TreeGroup.cpp
     src/VisualizerState.cpp
 )
-add_executable(MySFMLApp main.cpp ${SOURCES})
+add_executable(MySFMLApp main.cpp ${SOURCES} "src/Heap/heap.h")
 # 4. Liên kết các thư viện SFML với file thực thi
 target_link_libraries(MySFMLApp sfml-graphics sfml-window sfml-system)
 
