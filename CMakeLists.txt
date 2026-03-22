@@ -1,41 +1,40 @@
-cmake_minimum_required(VERSION 3.10)
-project(MySFMLProject)
+cmake_minimum_required(VERSION 3.14)
+project(DataStructureVisualizer)
 
-# 1. Chỉ đường dẫn đến thư mục chứa các file cấu hình của SFML
-# Lưu ý: Đường dẫn này trỏ vào thư mục chứa SFMLConfig.cmake
-set(SFML_DIR "${CMAKE_CURRENT_SOURCE_DIR}/SFML-2.6.2/lib/cmake/SFML")
-
-# 2. Tìm kiếm thư viện SFML
-find_package(SFML 2.6 COMPONENTS graphics window system audio network REQUIRED)
-
-# 3. Thêm file source code của bạn
-include_directories(include)
-set(SOURCES
-    src/App.cpp
-    src/Button.cpp
-    src/CodeBox.cpp
-    src/GraphGroup.cpp
-    src/HashTableGroup.cpp
-    src/InputBox.cpp
-    src/LinkedListGroup.cpp
-    src/MenuState.cpp
-    src/Sidebar.cpp
-    src/TreeGroup.cpp
-    src/VisualizerState.cpp
+# 1. SFML FetchContent - This downloads and builds SFML automatically
+include(FetchContent)
+FetchContent_Declare(
+    SFML
+    GIT_REPOSITORY https://github.com/SFML/SFML.git
+    GIT_TAG 2.6.1
 )
+
+# Optimization: Don't build SFML examples or docs
+set(SFML_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(SFML_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(SFML_BUILD_DOC OFF CACHE BOOL "" FORCE)
+set(SFML_INSTALL OFF CACHE BOOL "" FORCE)
+
+FetchContent_MakeAvailable(SFML)
+
+# 2. Your Project Settings
+include_directories(include)
+
+# Collect all your source files
+file(GLOB_RECURSE SOURCES "src/*.cpp")
+
 add_executable(MySFMLApp main.cpp ${SOURCES})
-# 4. Liên kết các thư viện SFML với file thực thi
-target_link_libraries(MySFMLApp sfml-graphics sfml-window sfml-system)
 
-# (Tùy chọn) Copy các file DLL vào thư mục build để có thể chạy được app
-if(WIN32)
-    add_custom_command(TARGET MySFMLApp POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${CMAKE_CURRENT_SOURCE_DIR}/SFML-2.6.2/bin"
-        $<TARGET_FILE_DIR:MySFMLApp>)
-endif()
+# 3. Link against the SFML targets (Note: names are sfml-graphics, etc.)
+target_link_libraries(MySFMLApp 
+    sfml-graphics 
+    sfml-window 
+    sfml-system 
+    sfml-audio 
+    sfml-network
+)
 
-# Thiết lập tự động Copy thư mục assets vào thư mục build (cạnh file .exe) mỗi lần Compile
+# 4. Copy Assets (Important for your images/fonts)
 add_custom_command(TARGET MySFMLApp POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
     "${CMAKE_CURRENT_SOURCE_DIR}/assets"
