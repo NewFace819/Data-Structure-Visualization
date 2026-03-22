@@ -17,7 +17,7 @@ private:
 	sf::Color m_nodeColor;
 	sf::Color m_highlightColor1;
 	sf::Color m_highlightColor2;
-	void changeHighlightColors(int id);
+	void changeColors(int ColorsId);
 
 	void drawTree(sf::RenderWindow& window, const HeapStep& currentStep);
 
