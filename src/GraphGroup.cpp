@@ -12,6 +12,7 @@ void GraphGroup::init()
     VisualizerState::init();
 
     m_graphModel.initializeGrid(20, 30);
+    setupToolbox();
 
     m_boardBackground.setPosition(m_gridOrigin);
     m_boardBackground.setSize(sf::Vector2f(m_graphModel.cols() * m_cellSize,
@@ -27,17 +28,91 @@ void GraphGroup::init()
 void GraphGroup::handleInput(const sf::Event& event)
 {
     VisualizerState::handleInput(event);
+
+    sf::RenderWindow& window = m_app->getWindow();
+    for (auto& button : m_toolButtons) {
+        button.handleEvent(event, window);
+    }
 }
 
 void GraphGroup::update(float dt)
 {
     VisualizerState::update(dt);
+
+    sf::RenderWindow& window = m_app->getWindow();
+    for (auto& button : m_toolButtons) {
+        button.update(window);
+    }
 }
 
 void GraphGroup::draw(sf::RenderWindow& window)
 {
     VisualizerState::draw(window);
+    drawToolbox(window);
     drawGrid(window);
+}
+
+void GraphGroup::setupToolbox()
+{
+    m_toolboxBackground.setPosition(290.0f, 90.0f);
+    m_toolboxBackground.setSize(sf::Vector2f(720.0f, 78.0f));
+    m_toolboxBackground.setFillColor(sf::Color(255, 255, 255, 235));
+    m_toolboxBackground.setOutlineThickness(2.0f);
+    m_toolboxBackground.setOutlineColor(sf::Color(226, 232, 240));
+
+    m_toolboxTitle.setFont(m_app->getFont());
+    m_toolboxTitle.setString("Edit Tool");
+    m_toolboxTitle.setCharacterSize(18);
+    m_toolboxTitle.setFillColor(sf::Color(71, 85, 105));
+    m_toolboxTitle.setPosition(312.0f, 102.0f);
+
+    m_toolButtons.clear();
+    m_toolButtons.emplace_back(430.0f, 106.0f, 120.0f, 38.0f, "Wall", m_app->getFont());
+    m_toolButtons.emplace_back(565.0f, 106.0f, 120.0f, 38.0f, "Start", m_app->getFont());
+    m_toolButtons.emplace_back(700.0f, 106.0f, 120.0f, 38.0f, "End", m_app->getFont());
+
+    m_toolButtons[0].setCallback([this]() {
+        m_selectedTool = ToolSelection::Wall;
+        refreshToolButtonStyles();
+    });
+    m_toolButtons[1].setCallback([this]() {
+        m_selectedTool = ToolSelection::Start;
+        refreshToolButtonStyles();
+    });
+    m_toolButtons[2].setCallback([this]() {
+        m_selectedTool = ToolSelection::End;
+        refreshToolButtonStyles();
+    });
+
+    refreshToolButtonStyles();
+    m_gridOrigin.y = 180.0f;
+}
+
+void GraphGroup::refreshToolButtonStyles()
+{
+    const sf::Color inactiveFill(241, 245, 249);
+    const sf::Color inactiveHover(226, 232, 240);
+    const sf::Color inactiveActive(203, 213, 225);
+    const sf::Color activeFill(14, 116, 144);
+    const sf::Color activeHover(8, 145, 178);
+    const sf::Color activeActive(21, 94, 117);
+
+    for (std::size_t i = 0; i < m_toolButtons.size(); ++i) {
+        const bool isSelected =
+            (i == 0 && m_selectedTool == ToolSelection::Wall) ||
+            (i == 1 && m_selectedTool == ToolSelection::Start) ||
+            (i == 2 && m_selectedTool == ToolSelection::End);
+
+        if (isSelected) {
+            m_toolButtons[i].setColors(activeFill, activeHover, activeActive);
+            m_toolButtons[i].setTextColor(sf::Color::White);
+            m_toolButtons[i].setOutline(0.0f, sf::Color::Transparent);
+        } else {
+            m_toolButtons[i].setColors(inactiveFill, inactiveHover, inactiveActive);
+            m_toolButtons[i].setTextColor(sf::Color(30, 41, 59));
+            m_toolButtons[i].setOutline(1.0f, sf::Color(203, 213, 225));
+        }
+    }
 }
 
 void GraphGroup::drawGrid(sf::RenderWindow& window)
@@ -63,5 +138,15 @@ void GraphGroup::drawGrid(sf::RenderWindow& window)
                                 m_gridOrigin.y + coord.row * m_cellSize);
         m_cellShape.setFillColor(fillColor);
         window.draw(m_cellShape);
+    }
+}
+
+void GraphGroup::drawToolbox(sf::RenderWindow& window)
+{
+    window.draw(m_toolboxBackground);
+    window.draw(m_toolboxTitle);
+
+    for (const auto& button : m_toolButtons) {
+        button.draw(window);
     }
 }
