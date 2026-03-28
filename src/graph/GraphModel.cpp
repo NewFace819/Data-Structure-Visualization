@@ -15,11 +15,42 @@ void GraphModel::clear() {
     m_nextNodeId = 0;
     m_start = kInvalidNodeId;
     m_goal = kInvalidNodeId;
+    m_gridRows = 0;
+    m_gridCols = 0;
 }
 
 void GraphModel::clearEdges() {
+    if (m_mode == GraphMode::Grid) {
+        return;
+    }
+
     m_edges.clear();
     m_edgeSet.clear();
+}
+
+void GraphModel::initializeGrid(int rows, int cols) {
+    clear();
+    m_mode = GraphMode::Grid;
+    m_directed = false;
+
+    if (rows <= 0 || cols <= 0) {
+        return;
+    }
+
+    m_gridRows = rows;
+    m_gridCols = cols;
+
+    m_nodes.reserve(static_cast<std::size_t>(rows * cols));
+
+    for (int row = 0; row < rows; ++row) {
+        for (int col = 0; col < cols; ++col) {
+            appendNode(std::to_string(row) + "," + std::to_string(col),
+                       Vec2{static_cast<float>(col), static_cast<float>(row)});
+        }
+    }
+
+    setStart(nodeIdAt(rows / 2, cols / 4));
+    setGoal(nodeIdAt(rows / 2, (cols * 3) / 4));
 }
 
 void GraphModel::setMode(GraphMode mode) {
@@ -34,6 +65,11 @@ void GraphModel::setMode(GraphMode mode) {
 GraphMode GraphModel::mode() const { return m_mode; }
 
 void GraphModel::setDirected(bool directed) {
+    if (m_mode == GraphMode::Grid) {
+        m_directed = false;
+        return;
+    }
+
     m_directed = directed;
     rebuildEdgeSet();
 }
@@ -41,6 +77,14 @@ void GraphModel::setDirected(bool directed) {
 bool GraphModel::directed() const { return m_directed; }
 
 NodeId GraphModel::addNode(const std::string& name, Vec2 position) {
+    if (m_mode == GraphMode::Grid) {
+        return kInvalidNodeId;
+    }
+
+    return appendNode(name, position);
+}
+
+NodeId GraphModel::appendNode(const std::string& name, Vec2 position) {
     Node node;
     node.id = m_nextNodeId++;
     node.name = name;
@@ -53,6 +97,10 @@ NodeId GraphModel::addNode(const std::string& name, Vec2 position) {
 }
 
 bool GraphModel::removeNode(NodeId nodeId) {
+    if (m_mode == GraphMode::Grid) {
+        return false;
+    }
+
     const auto found = m_nodeIndex.find(nodeId);
     if (found == m_nodeIndex.end()) {
         return false;
@@ -87,6 +135,10 @@ bool GraphModel::removeNode(NodeId nodeId) {
 }
 
 bool GraphModel::moveNode(NodeId nodeId, Vec2 newPosition) {
+    if (m_mode == GraphMode::Grid) {
+        return false;
+    }
+
     Node* node = getNode(nodeId);
     if (!node) {
         return false;
@@ -106,6 +158,10 @@ bool GraphModel::moveNode(NodeId nodeId, Vec2 newPosition) {
 }
 
 bool GraphModel::renameNode(NodeId nodeId, const std::string& newName) {
+    if (m_mode == GraphMode::Grid) {
+        return false;
+    }
+
     Node* node = getNode(nodeId);
     if (!node) {
         return false;
@@ -121,11 +177,19 @@ bool GraphModel::setBlocked(NodeId nodeId, bool blocked) {
         return false;
     }
 
+    if (blocked && (nodeId == m_start || nodeId == m_goal)) {
+        return false;
+    }
+
     node->blocked = blocked;
     return true;
 }
 
 bool GraphModel::addEdge(NodeId from, NodeId to, std::optional<float> manualWeight) {
+    if (m_mode == GraphMode::Grid) {
+        return false;
+    }
+
     if (!containsNode(from) || !containsNode(to) || from == to) {
         return false;
     }
@@ -145,6 +209,10 @@ bool GraphModel::addEdge(NodeId from, NodeId to, std::optional<float> manualWeig
 }
 
 bool GraphModel::removeEdge(NodeId from, NodeId to) {
+    if (m_mode == GraphMode::Grid) {
+        return false;
+    }
+
     const auto before = m_edges.size();
 
     m_edges.erase(std::remove_if(m_edges.begin(), m_edges.end(),
@@ -166,6 +234,10 @@ bool GraphModel::removeEdge(NodeId from, NodeId to) {
 }
 
 bool GraphModel::updateEdgeWeight(NodeId from, NodeId to, float newWeight) {
+    if (m_mode == GraphMode::Grid) {
+        return false;
+    }
+
     if (newWeight < 0.0f) {
         return false;
     }
@@ -185,6 +257,18 @@ bool GraphModel::updateEdgeWeight(NodeId from, NodeId to, float newWeight) {
 }
 
 bool GraphModel::hasEdge(NodeId from, NodeId to) const {
+    if (m_mode == GraphMode::Grid) {
+        const GridCoord fromCoord = coordOf(from);
+        const GridCoord toCoord = coordOf(to);
+        if (fromCoord.row < 0 || toCoord.row < 0) {
+            return false;
+        }
+
+        const int rowDelta = std::abs(fromCoord.row - toCoord.row);
+        const int colDelta = std::abs(fromCoord.col - toCoord.col);
+        return rowDelta + colDelta == 1;
+    }
+
     return m_edgeSet.find(edgeKey(from, to)) != m_edgeSet.end();
 }
 
@@ -193,6 +277,12 @@ bool GraphModel::setStart(NodeId nodeId) {
         return false;
     }
 
+    Node* node = getNode(nodeId);
+    if (!node) {
+        return false;
+    }
+
+    node->blocked = false;
     m_start = nodeId;
     return true;
 }
@@ -202,6 +292,12 @@ bool GraphModel::setGoal(NodeId nodeId) {
         return false;
     }
 
+    Node* node = getNode(nodeId);
+    if (!node) {
+        return false;
+    }
+
+    node->blocked = false;
     m_goal = nodeId;
     return true;
 }
@@ -209,6 +305,32 @@ bool GraphModel::setGoal(NodeId nodeId) {
 NodeId GraphModel::start() const { return m_start; }
 
 NodeId GraphModel::goal() const { return m_goal; }
+
+int GraphModel::rows() const { return m_gridRows; }
+
+int GraphModel::cols() const { return m_gridCols; }
+
+bool GraphModel::isGrid() const { return m_mode == GraphMode::Grid; }
+
+bool GraphModel::inBounds(int row, int col) const {
+    return row >= 0 && row < m_gridRows && col >= 0 && col < m_gridCols;
+}
+
+NodeId GraphModel::nodeIdAt(int row, int col) const {
+    if (!inBounds(row, col)) {
+        return kInvalidNodeId;
+    }
+
+    return static_cast<NodeId>(row * m_gridCols + col);
+}
+
+GridCoord GraphModel::coordOf(NodeId nodeId) const {
+    if (!isGrid() || !containsNode(nodeId) || m_gridCols <= 0) {
+        return {};
+    }
+
+    return GridCoord{nodeId / m_gridCols, nodeId % m_gridCols};
+}
 
 bool GraphModel::containsNode(NodeId nodeId) const {
     return m_nodeIndex.find(nodeId) != m_nodeIndex.end();
@@ -240,6 +362,39 @@ Node* GraphModel::getNode(NodeId nodeId) {
 std::vector<std::pair<NodeId, float>> GraphModel::neighbors(NodeId nodeId) const {
     std::vector<std::pair<NodeId, float>> out;
     if (!containsNode(nodeId)) {
+        return out;
+    }
+
+    if (m_mode == GraphMode::Grid) {
+        static constexpr int kDirs[4][2] = {
+            {-1, 0},
+            {1, 0},
+            {0, -1},
+            {0, 1},
+        };
+
+        const GridCoord coord = coordOf(nodeId);
+        if (coord.row < 0) {
+            return out;
+        }
+
+        out.reserve(4);
+        for (const auto& dir : kDirs) {
+            const int nextRow = coord.row + dir[0];
+            const int nextCol = coord.col + dir[1];
+            if (!inBounds(nextRow, nextCol)) {
+                continue;
+            }
+
+            const NodeId nextId = nodeIdAt(nextRow, nextCol);
+            const Node* nextNode = getNode(nextId);
+            if (!nextNode || nextNode->blocked) {
+                continue;
+            }
+
+            out.emplace_back(nextId, 1.0f);
+        }
+
         return out;
     }
 

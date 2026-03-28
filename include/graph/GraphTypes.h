@@ -11,6 +11,11 @@ constexpr NodeId kInvalidNodeId = -1;
 
 enum class GraphMode : std::uint8_t { Grid, Coordinate, Normal };
 
+struct GridCoord {
+    int row = -1;
+    int col = -1;
+};
+
 struct Vec2 {
     float x = 0.0f;
     float y = 0.0f;

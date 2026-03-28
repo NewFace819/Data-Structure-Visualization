@@ -15,6 +15,7 @@ public:
 
     void clear();
     void clearEdges();
+    void initializeGrid(int rows, int cols);
 
     void setMode(GraphMode mode);
     GraphMode mode() const;
@@ -37,6 +38,12 @@ public:
     bool setGoal(NodeId nodeId);
     NodeId start() const;
     NodeId goal() const;
+    int rows() const;
+    int cols() const;
+    bool isGrid() const;
+    bool inBounds(int row, int col) const;
+    NodeId nodeIdAt(int row, int col) const;
+    GridCoord coordOf(NodeId nodeId) const;
 
     bool containsNode(NodeId nodeId) const;
     bool nameExists(const std::string& name) const;
@@ -51,6 +58,7 @@ public:
 
 private:
     std::uint64_t edgeKey(NodeId from, NodeId to) const;
+    NodeId appendNode(const std::string& name, Vec2 position);
     void rebuildEdgeSet();
     float distance(NodeId a, NodeId b) const;
     float resolveNewEdgeWeight(NodeId from, NodeId to, std::optional<float> manualWeight) const;
@@ -59,6 +67,8 @@ private:
 
     bool m_directed = false;
     GraphMode m_mode = GraphMode::Normal;
+    int m_gridRows = 0;
+    int m_gridCols = 0;
 
     NodeId m_nextNodeId = 0;
     NodeId m_start = kInvalidNodeId;
