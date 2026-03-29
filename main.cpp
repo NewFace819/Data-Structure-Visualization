@@ -85,7 +85,7 @@ int main()
 
         window.clear();
         drawUI(window, ui);
-        drawTreeText(window, ui, tree);
+        drawTreeVisual(window, ui, tree);
         window.display();
     }
 

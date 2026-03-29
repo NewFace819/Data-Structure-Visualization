@@ -1,6 +1,7 @@
 #include "VisualizerUI.h"
 #include <sstream>
 #include <vector>
+#include <cmath>
 
 VisualizerUI::VisualizerUI()
 {
@@ -166,39 +167,164 @@ void setStatus(VisualizerUI& ui, const std::string& message)
     ui.statusText.setString(message);
 }
 
-std::string buildTreeText(const Tree23& tree)
+void drawArrow(sf::RenderWindow& window, sf::Vector2f start, sf::Vector2f end)
 {
-    std::vector<std::vector<std::string>> levels = tree.getLevelOrderText();
-
-    if (levels.empty())
+    sf::Vertex line[] =
     {
-        return "Tree is empty";
-    }
+        sf::Vertex(start, sf::Color::Black),
+        sf::Vertex(end, sf::Color::Black)
+    };
+    window.draw(line, 2, sf::Lines);
 
-    std::stringstream ss;
+    float dx = end.x - start.x;
+    float dy = end.y - start.y;
+    float angle = std::atan2(dy, dx);
 
-    for (int i = 0; i < (int)levels.size(); i++)
-    {
-        ss << "Level " << i << ": ";
-        for (int j = 0; j < (int)levels[i].size(); j++)
-        {
-            ss << levels[i][j];
-            if (j + 1 < (int)levels[i].size())
-            {
-                ss << ' ';
-            }
-        }
+    float arrowSize = 10.f;
 
-        if (i + 1 < (int)levels.size())
-        {
-            ss << '\n';
-        }
-    }
+    sf::ConvexShape arrowHead;
+    arrowHead.setPointCount(3);
+    arrowHead.setPoint(0, end);
+    arrowHead.setPoint(1, sf::Vector2f(
+        end.x - arrowSize * std::cos(angle - 0.4f),
+        end.y - arrowSize * std::sin(angle - 0.4f)
+    ));
+    arrowHead.setPoint(2, sf::Vector2f(
+        end.x - arrowSize * std::cos(angle + 0.4f),
+        end.y - arrowSize * std::sin(angle + 0.4f)
+    ));
+    arrowHead.setFillColor(sf::Color::Black);
 
-    return ss.str();
+    window.draw(arrowHead);
 }
 
-void drawTreeText(sf::RenderWindow& window, VisualizerUI& ui, const Tree23& tree)
+void drawNodeBox(sf::RenderWindow& window, const sf::Font& font, Tree23Node* node, float centerX, float topY)
+{
+    float keyWidth = 55.f;
+    float nodeHeight = 45.f;
+    float totalWidth = keyWidth * (float)node->keyCount;
+    float leftX = centerX - totalWidth / 2.f;
+
+    sf::RectangleShape box;
+    box.setSize(sf::Vector2f(totalWidth, nodeHeight));
+    box.setPosition(sf::Vector2f(leftX, topY));
+    box.setFillColor(sf::Color::White);
+    box.setOutlineThickness(2.f);
+    box.setOutlineColor(sf::Color::Black);
+    window.draw(box);
+
+    if (node->keyCount == 2)
+    {
+        sf::Vertex divider[] =
+        {
+            sf::Vertex(sf::Vector2f(leftX + keyWidth, topY), sf::Color::Black),
+            sf::Vertex(sf::Vector2f(leftX + keyWidth, topY + nodeHeight), sf::Color::Black)
+        };
+        window.draw(divider, 2, sf::Lines);
+    }
+
+    sf::Text text1;
+    text1.setFont(font);
+    text1.setCharacterSize(22);
+    text1.setFillColor(sf::Color::Black);
+    text1.setString(std::to_string(node->keys[0]));
+    sf::FloatRect b1 = text1.getLocalBounds();
+    text1.setOrigin(b1.left + b1.width / 2.f, b1.top + b1.height / 2.f);
+    text1.setPosition(sf::Vector2f(leftX + keyWidth / 2.f, topY + nodeHeight / 2.f));
+    window.draw(text1);
+
+    if (node->keyCount == 2)
+    {
+        sf::Text text2;
+        text2.setFont(font);
+        text2.setCharacterSize(22);
+        text2.setFillColor(sf::Color::Black);
+        text2.setString(std::to_string(node->keys[1]));
+        sf::FloatRect b2 = text2.getLocalBounds();
+        text2.setOrigin(b2.left + b2.width / 2.f, b2.top + b2.height / 2.f);
+        text2.setPosition(sf::Vector2f(leftX + keyWidth + keyWidth / 2.f, topY + nodeHeight / 2.f));
+        window.draw(text2);
+    }
+}
+
+void drawTreeRecursive(sf::RenderWindow& window, const sf::Font& font, Tree23Node* node,
+                       float centerX, float topY, float offset)
+{
+    if (node == nullptr)
+    {
+        return;
+    }
+
+    float keyWidth = 55.f;
+    float nodeHeight = 45.f;
+    float totalWidth = keyWidth * (float)node->keyCount;
+
+    drawNodeBox(window, font, node, centerX, topY);
+
+    float nextY = topY + 110.f;
+    float nextOffset = offset * 0.55f;
+
+    if (nextOffset < 70.f)
+    {
+        nextOffset = 70.f;
+    }
+
+    float parentBottomX = centerX;
+    float parentBottomY = topY + nodeHeight;
+
+    if (node->keyCount == 1)
+    {
+        if (node->child[0] != nullptr)
+        {
+            float childX = centerX - offset;
+            float childWidth = 55.f * (float)node->child[0]->keyCount;
+            drawArrow(window,
+                      sf::Vector2f(parentBottomX, parentBottomY),
+                      sf::Vector2f(childX, nextY));
+            drawTreeRecursive(window, font, node->child[0], childX, nextY, nextOffset);
+        }
+
+        if (node->child[2] != nullptr)
+        {
+            float childX = centerX + offset;
+            drawArrow(window,
+                      sf::Vector2f(parentBottomX, parentBottomY),
+                      sf::Vector2f(childX, nextY));
+            drawTreeRecursive(window, font, node->child[2], childX, nextY, nextOffset);
+        }
+    }
+    else
+    {
+        if (node->child[0] != nullptr)
+        {
+            float childX = centerX - offset;
+            drawArrow(window,
+                      sf::Vector2f(parentBottomX, parentBottomY),
+                      sf::Vector2f(childX, nextY));
+            drawTreeRecursive(window, font, node->child[0], childX, nextY, nextOffset);
+        }
+
+        if (node->child[1] != nullptr)
+        {
+            float childX = centerX;
+            drawArrow(window,
+                      sf::Vector2f(parentBottomX, parentBottomY),
+                      sf::Vector2f(childX, nextY));
+            drawTreeRecursive(window, font, node->child[1], childX, nextY, nextOffset);
+        }
+
+        if (node->child[2] != nullptr)
+        {
+            float childX = centerX + offset;
+            drawArrow(window,
+                      sf::Vector2f(parentBottomX, parentBottomY),
+                      sf::Vector2f(childX, nextY));
+            drawTreeRecursive(window, font, node->child[2], childX, nextY, nextOffset);
+        }
+    }
+}
+
+void drawTreeVisual(sf::RenderWindow& window, VisualizerUI& ui, const Tree23& tree)
 {
     if (tree.isEmpty())
     {
@@ -212,12 +338,16 @@ void drawTreeText(sf::RenderWindow& window, VisualizerUI& ui, const Tree23& tree
         return;
     }
 
-    sf::Text treeText;
-    treeText.setFont(*font);
-    treeText.setCharacterSize(28);
-    treeText.setFillColor(sf::Color(80, 80, 80));
-    treeText.setString(buildTreeText(tree));
-    treeText.setPosition(sf::Vector2f(380.f, 120.f));
+    Tree23Node* root = tree.getRoot();
+    if (root == nullptr)
+    {
+        window.draw(ui.treePlaceholderText);
+        return;
+    }
 
-    window.draw(treeText);
+    float startX = 860.f;
+    float startY = 90.f;
+    float startOffset = 220.f;
+
+    drawTreeRecursive(window, *font, root, startX, startY, startOffset);
 }
