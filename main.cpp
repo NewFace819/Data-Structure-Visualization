@@ -53,7 +53,15 @@ int main()
                             setStatus(ui, "Invalid input");
                         }
                         else {
-                            setStatus(ui, "Insert button clicked");
+                            if (tree.insert(value))
+                            {
+                                setStatus(ui, "Insert successful");
+                                ui.inputBuffer = "";
+                                ui.inputText.setString("");
+                            }
+                            else {
+                                setStatus(ui, "Value already exists");
+                            }
                         }
                     }
 
@@ -77,12 +85,7 @@ int main()
 
         window.clear();
         drawUI(window, ui);
-
-        if (tree.isEmpty())
-        {
-            window.draw(ui.treePlaceholderText);
-        }
-
+        drawTreeText(window, ui, tree);
         window.display();
     }
 

@@ -1,5 +1,6 @@
 #include "VisualizerUI.h"
 #include <sstream>
+#include <vector>
 
 VisualizerUI::VisualizerUI()
 {
@@ -163,4 +164,60 @@ int getInputValue(const VisualizerUI& ui, bool& isValid)
 void setStatus(VisualizerUI& ui, const std::string& message)
 {
     ui.statusText.setString(message);
+}
+
+std::string buildTreeText(const Tree23& tree)
+{
+    std::vector<std::vector<std::string>> levels = tree.getLevelOrderText();
+
+    if (levels.empty())
+    {
+        return "Tree is empty";
+    }
+
+    std::stringstream ss;
+
+    for (int i = 0; i < (int)levels.size(); i++)
+    {
+        ss << "Level " << i << ": ";
+        for (int j = 0; j < (int)levels[i].size(); j++)
+        {
+            ss << levels[i][j];
+            if (j + 1 < (int)levels[i].size())
+            {
+                ss << ' ';
+            }
+        }
+
+        if (i + 1 < (int)levels.size())
+        {
+            ss << '\n';
+        }
+    }
+
+    return ss.str();
+}
+
+void drawTreeText(sf::RenderWindow& window, VisualizerUI& ui, const Tree23& tree)
+{
+    if (tree.isEmpty())
+    {
+        window.draw(ui.treePlaceholderText);
+        return;
+    }
+
+    const sf::Font* font = ui.treePlaceholderText.getFont();
+    if (font == nullptr)
+    {
+        return;
+    }
+
+    sf::Text treeText;
+    treeText.setFont(*font);
+    treeText.setCharacterSize(28);
+    treeText.setFillColor(sf::Color(80, 80, 80));
+    treeText.setString(buildTreeText(tree));
+    treeText.setPosition(sf::Vector2f(380.f, 120.f));
+
+    window.draw(treeText);
 }
