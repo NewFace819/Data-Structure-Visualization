@@ -148,9 +148,7 @@ void LinkedListGroup::initData(const std::string& input)
     int idx = 0;
     ListNode* curr = m_head;
     while(curr) {
-        curr->position = sf::Vector2f(startX + idx * gapX, startY);
-        curr->circle.setPosition(curr->position);
-        curr->text.setPosition(curr->position);
+        curr->updatePosition(sf::Vector2f(startX + idx * gapX, startY));
         curr = curr->next;
         idx++;
     }
@@ -308,11 +306,11 @@ void LinkedListGroup::loadState(int index)
         n->next = nullptr;
         
         if ((int)i == state.foundNodeIndex) {
-            n->circle.setFillColor(sf::Color(46, 204, 113)); // Emerald Green
+            n->leftBg.setFillColor(sf::Color(46, 204, 113)); // Emerald Green
         } else if ((int)i == state.activeNodeIndex) {
-            n->circle.setFillColor(sf::Color(230, 126, 34)); // Orange (Active)
+            n->leftBg.setFillColor(sf::Color(230, 126, 34)); // Orange (Active)
         } else {
-            n->circle.setFillColor(sf::Color(52, 152, 219)); // Normal Blue
+            n->leftBg.setFillColor(sf::Color(60, 60, 60)); // Dark Gray
         }
         
         if (!m_head) m_head = n;
@@ -387,8 +385,7 @@ void LinkedListGroup::update(float dt)
         curr->position.x += (targetX - curr->position.x) * lerpFactor;
         curr->position.y += (targetY - curr->position.y) * lerpFactor;
 
-        curr->circle.setPosition(curr->position);
-        curr->text.setPosition(curr->position);
+        curr->updatePosition(curr->position);
 
         curr = curr->next;
         idx++;
@@ -423,30 +420,27 @@ void LinkedListGroup::draw(sf::RenderWindow& window)
     ListNode* curr = m_head;
     while (curr != nullptr)
     {
-        if (curr->next != nullptr)
-        {
-            float radius = 20.0f;
-            sf::Vector2f start = curr->position;
-            sf::Vector2f end = curr->next->position;
-
-            sf::Vector2f dir = end - start;
-            float len = std::sqrt(dir.x * dir.x + dir.y * dir.y);
-            if (len > 0)
-            {
-                dir /= len;
-                start += dir * radius;
-                end -= dir * radius;
-                drawArrow(window, start, end);
-            }
-        }
+        window.draw(curr->leftBg);
+        window.draw(curr->rightBg);
+        window.draw(curr->separator);
+        window.draw(curr->pointerDot);
+        window.draw(curr->text);
         curr = curr->next;
     }
 
     curr = m_head;
     while (curr != nullptr)
     {
-        window.draw(curr->circle);
-        window.draw(curr->text);
+        if (curr->next != nullptr)
+        {
+            float width = 70.0f;
+            float divX = width * 0.7f;
+            
+            sf::Vector2f start = curr->position + sf::Vector2f(-width/2.0f + divX + (width - divX)/2.0f, 0);
+            sf::Vector2f end = curr->next->position - sf::Vector2f(width/2.0f, 0);
+
+            drawArrow(window, start, end);
+        }
         curr = curr->next;
     }
 }

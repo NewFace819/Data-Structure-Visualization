@@ -2,32 +2,91 @@
 #include "VisualizerState.h"
 #include <vector>
 #include <string>
+#include <cmath>
 
 struct ListNode {
     int value;
     sf::Vector2f position;
-    sf::CircleShape circle;
+    sf::ConvexShape leftBg;
+    sf::ConvexShape rightBg;
+    sf::RectangleShape separator;
+    sf::CircleShape pointerDot;
     sf::Text text;
     ListNode* next;
 
     ListNode(int val, sf::Vector2f pos, const sf::Font& font) 
         : value(val), position(pos), next(nullptr) 
     {
-        circle.setRadius(20.0f);
-        circle.setOrigin(20.0f, 20.0f);
-        circle.setPosition(position);
-        circle.setFillColor(sf::Color(52, 152, 219)); // Soft Blue
-        circle.setOutlineThickness(2.0f);
-        circle.setOutlineColor(sf::Color(41, 128, 185));
+        float width = 70.0f;
+        float height = 40.0f;
+        float radius = 5.0f;
+        
+        float divX = width * 0.7f;
+        int pointsPerCorner = 8;
+        
+        // Left Background (70%): rounded left corners, square right corners
+        leftBg.setPointCount(pointsPerCorner * 2 + 2);
+        for (int i = 0; i < pointsPerCorner; ++i) { // Top-left
+            float angle = 3.141592654f + i * (3.141592654f / 2.0f) / (pointsPerCorner - 1);
+            leftBg.setPoint(i, sf::Vector2f(radius + radius * std::cos(angle), radius + radius * std::sin(angle)));
+        }
+        leftBg.setPoint(pointsPerCorner, sf::Vector2f(divX, 0.0f)); // Top-right (square)
+        leftBg.setPoint(pointsPerCorner + 1, sf::Vector2f(divX, height)); // Bottom-right (square)
+        for (int i = 0; i < pointsPerCorner; ++i) { // Bottom-left
+            float angle = 3.141592654f / 2.0f + i * (3.141592654f / 2.0f) / (pointsPerCorner - 1);
+            leftBg.setPoint(pointsPerCorner + 2 + i, sf::Vector2f(radius + radius * std::cos(angle), height - radius + radius * std::sin(angle)));
+        }
+        leftBg.setOrigin(width / 2.0f, height / 2.0f);
+        leftBg.setFillColor(sf::Color(60, 60, 60)); // Nửa trái tối màu
+        leftBg.setOutlineThickness(2.0f);
+        leftBg.setOutlineColor(sf::Color(100, 100, 100));
+
+        // Right Background (30%): square left corners, rounded right corners
+        rightBg.setPointCount(pointsPerCorner * 2 + 2);
+        rightBg.setPoint(0, sf::Vector2f(divX, 0.0f)); // Top-left (square)
+        for (int i = 0; i < pointsPerCorner; ++i) { // Top-right
+            float angle = 3.141592654f * 1.5f + i * (3.141592654f / 2.0f) / (pointsPerCorner - 1);
+            rightBg.setPoint(1 + i, sf::Vector2f(width - radius + radius * std::cos(angle), radius + radius * std::sin(angle)));
+        }
+        for (int i = 0; i < pointsPerCorner; ++i) { // Bottom-right
+            float angle = i * (3.141592654f / 2.0f) / (pointsPerCorner - 1);
+            rightBg.setPoint(1 + pointsPerCorner + i, sf::Vector2f(width - radius + radius * std::cos(angle), height - radius + radius * std::sin(angle)));
+        }
+        rightBg.setPoint(1 + pointsPerCorner * 2, sf::Vector2f(divX, height)); // Bottom-left (square)
+        
+        rightBg.setOrigin(width / 2.0f, height / 2.0f);
+        rightBg.setFillColor(sf::Color::White); // Nửa phải màu trắng
+        rightBg.setOutlineThickness(2.0f);
+        rightBg.setOutlineColor(sf::Color(100, 100, 100));
+
+        separator.setSize(sf::Vector2f(2.0f, height));
+        separator.setOrigin(1.0f, height / 2.0f);
+        separator.setFillColor(sf::Color(100, 100, 100));
+
+        pointerDot.setRadius(3.0f);
+        pointerDot.setOrigin(3.0f, 3.0f);
+        pointerDot.setFillColor(sf::Color(100, 100, 100));
 
         text.setFont(font);
         text.setString(std::to_string(value));
-        text.setCharacterSize(16);
+        text.setCharacterSize(14);
         text.setFillColor(sf::Color::White);
-        // Center text
         sf::FloatRect bounds = text.getLocalBounds();
         text.setOrigin(bounds.left + bounds.width / 2.0f, bounds.top + bounds.height / 2.0f);
-        text.setPosition(position);
+
+        updatePosition(position);
+    }
+
+    void updatePosition(sf::Vector2f pos) {
+        position = pos;
+        float width = 70.0f;
+        float divX = width * 0.7f;
+        
+        leftBg.setPosition(position);
+        rightBg.setPosition(position);
+        separator.setPosition(position.x - width/2.0f + divX, position.y);
+        pointerDot.setPosition(position.x - width/2.0f + divX + (width - divX)/2.0f, position.y);
+        text.setPosition(position.x - width/2.0f + divX/2.0f, position.y);
     }
 };
 
