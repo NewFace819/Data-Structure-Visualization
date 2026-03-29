@@ -128,11 +128,6 @@ void Sidebar::update(const sf::RenderWindow& window)
 
 void Sidebar::update(sf::Vector2f mousePos)
 {
-    if (m_inputBox.isVisible()) {
-        // Do not update buttons hover if input box is taking precedence
-        return; 
-    }
-
     for (auto& btn : m_buttons)
     {
         btn.update(mousePos);
