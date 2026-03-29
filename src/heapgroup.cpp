@@ -1,8 +1,29 @@
 #include "../include/heapgroup.h"
 #include "../include/App.h"
 #include <iostream>
+#include <sstream>
+#include <algorithm>
 #include <cmath>
 
+
+namespace {
+	std::vector<int> StringToInts(const std::string& str) {
+		std::vector<int> result;
+		std::istringstream ss(str);
+		std::string item;
+		while (std::getline(ss, item, ',')) {
+			item.erase(std::remove_if(item.begin(), item.end(), ::isspace), item.end());
+			if (!item.empty()) {
+				try {
+					result.push_back(std::stoi(item));
+				} catch (const std::invalid_argument&) {
+					std::cerr << "Invalid input: " << item << " is not an integer." << std::endl;
+				}
+			}
+		}
+		return result;
+	}
+}
 //Init state heap group
 HeapGroup::HeapGroup(App* app)
 	: VisualizerState(app, "Heap")
@@ -22,6 +43,7 @@ void HeapGroup::init()
 	//Init heap for demo
 	m_heap.init({ 5, 3, 8, 1, 4 });
 	m_currentStep = 0;
+	m_isPaused = true;
 	// Pseudo code for CodeBox
 	setCode({
 		"void init(vector<int>& data) {",
@@ -60,9 +82,3 @@ void HeapGroup::handleInput(const sf::Event& event)
 	VisualizerState::handleInput(event);
 }
 
-// Update state
-void HeapGroup::update(float dt)
-{
-	VisualizerState::update(dt);
-	const
-}
