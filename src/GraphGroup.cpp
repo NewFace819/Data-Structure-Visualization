@@ -1,6 +1,21 @@
 #include "GraphGroup.h"
 #include "App.h"
 
+namespace {
+
+const std::vector<std::string> kAStarCode = {
+    "AStar(start, goal):",
+    "    push start into frontier",
+    "    while frontier is not empty:",
+    "        current = node with lowest f score",
+    "        mark current as visited",
+    "        if current == goal: rebuild path",
+    "        for each valid neighbor:",
+    "            if better path found: push neighbor"
+};
+
+}
+
 GraphGroup::GraphGroup(App* app) 
     : VisualizerState(app, "Graph Algorithms"),
       m_graphModel(false)
@@ -13,6 +28,32 @@ void GraphGroup::init()
 
     m_graphModel.initializeGrid(20, 30);
     setupToolbox();
+    setCode(kAStarCode);
+    highlightCodeLine(-1);
+    m_sidebar.setPlayButtonText("Start");
+    m_sidebar.setBackCallback([this]() {
+        m_isPaused = true;
+        m_sidebar.setPlayButtonText("Start");
+        stepBack();
+    });
+    m_sidebar.setNextCallback([this]() {
+        m_isPaused = true;
+        m_sidebar.setPlayButtonText("Start");
+        stepForward();
+    });
+    m_sidebar.setPlayPauseCallback([this]() {
+        const bool shouldRestart =
+            m_traversalSteps.empty() ||
+            m_currentTraversalStep >= static_cast<int>(m_traversalSteps.size()) - 1;
+
+        if (shouldRestart) {
+            runTraversal();
+            return;
+        }
+
+        m_isPaused = !m_isPaused;
+        m_sidebar.setPlayButtonText(m_isPaused ? "Start" : "Pause");
+    });
 
     m_boardBackground.setPosition(m_gridOrigin);
     m_boardBackground.setSize(sf::Vector2f(m_graphModel.cols() * m_cellSize,
@@ -62,6 +103,23 @@ void GraphGroup::update(float dt)
     sf::RenderWindow& window = m_app->getWindow();
     for (auto& button : m_toolButtons) {
         button.update(window);
+    }
+
+    if (!m_isPaused && !m_traversalSteps.empty()) {
+        m_playTimer += dt;
+        const float speed = m_sidebar.getSpeed();
+        const float invSpeed = 1.0f - speed;
+        const float delay = 0.02f + 1.48f * invSpeed * invSpeed;
+
+        if (m_playTimer > delay) {
+            m_playTimer = 0.0f;
+            if (m_currentTraversalStep < static_cast<int>(m_traversalSteps.size()) - 1) {
+                stepForward();
+            } else {
+                m_isPaused = true;
+                m_sidebar.setPlayButtonText("Start");
+            }
+        }
     }
 }
 
@@ -167,6 +225,7 @@ void GraphGroup::handleGridInteraction(sf::Vector2f mousePosition)
         break;
     }
 
+    resetTraversal();
     m_lastPaintedNode = nodeId;
 }
 
@@ -189,6 +248,79 @@ graph::NodeId GraphGroup::nodeIdAtPosition(sf::Vector2f mousePosition) const
     return m_graphModel.nodeIdAt(row, col);
 }
 
+void GraphGroup::resetTraversal()
+{
+    m_traversalSteps.clear();
+    m_currentTraversalStep = -1;
+    m_inQueueNodes.clear();
+    m_visitedNodes.clear();
+    m_pathNodes.clear();
+    m_activeNode = graph::kInvalidNodeId;
+    m_isPaused = true;
+    m_playTimer = 0.0f;
+    m_sidebar.setPlayButtonText("Start");
+    highlightCodeLine(-1);
+}
+
+void GraphGroup::runTraversal()
+{
+    resetTraversal();
+    m_traversalSteps = graph::AStar::run(m_graphModel);
+    if (m_traversalSteps.empty()) {
+        return;
+    }
+
+    m_currentTraversalStep = 0;
+    loadTraversalStep(m_currentTraversalStep);
+    m_isPaused = false;
+    m_sidebar.setPlayButtonText("Pause");
+}
+
+void GraphGroup::loadTraversalStep(int index)
+{
+    if (index < 0 || index >= static_cast<int>(m_traversalSteps.size())) {
+        return;
+    }
+
+    const graph::AStarStep& step = m_traversalSteps[index];
+    m_inQueueNodes.clear();
+    m_visitedNodes.clear();
+    m_pathNodes.clear();
+
+    m_inQueueNodes.insert(step.inQueue.begin(), step.inQueue.end());
+    m_visitedNodes.insert(step.visited.begin(), step.visited.end());
+    m_pathNodes.insert(step.path.begin(), step.path.end());
+    m_activeNode = step.current;
+
+    if (!step.path.empty()) {
+        highlightCodeLine(5);
+    } else if (m_visitedNodes.find(step.current) != m_visitedNodes.end()) {
+        highlightCodeLine(4);
+    } else if (m_inQueueNodes.find(step.current) != m_inQueueNodes.end()) {
+        highlightCodeLine(7);
+    } else if (step.current == m_graphModel.start()) {
+        highlightCodeLine(1);
+    } else {
+        highlightCodeLine(2);
+    }
+}
+
+void GraphGroup::stepBack()
+{
+    if (m_currentTraversalStep > 0) {
+        --m_currentTraversalStep;
+        loadTraversalStep(m_currentTraversalStep);
+    }
+}
+
+void GraphGroup::stepForward()
+{
+    if (m_currentTraversalStep < static_cast<int>(m_traversalSteps.size()) - 1) {
+        ++m_currentTraversalStep;
+        loadTraversalStep(m_currentTraversalStep);
+    }
+}
+
 void GraphGroup::drawGrid(sf::RenderWindow& window)
 {
     window.draw(m_boardBackground);
@@ -200,12 +332,22 @@ void GraphGroup::drawGrid(sf::RenderWindow& window)
         }
 
         sf::Color fillColor = sf::Color::White;
+        if (node.blocked) {
+            fillColor = sf::Color(51, 65, 85);
+        } else if (m_pathNodes.find(node.id) != m_pathNodes.end()) {
+            fillColor = sf::Color(250, 204, 21);
+        } else if (node.id == m_activeNode && m_visitedNodes.find(node.id) != m_visitedNodes.end()) {
+            fillColor = sf::Color(245, 158, 11);
+        } else if (m_visitedNodes.find(node.id) != m_visitedNodes.end()) {
+            fillColor = sf::Color(14, 165, 233);
+        } else if (m_inQueueNodes.find(node.id) != m_inQueueNodes.end()) {
+            fillColor = sf::Color(167, 243, 208);
+        }
+
         if (node.id == m_graphModel.start()) {
             fillColor = sf::Color(34, 197, 94);
         } else if (node.id == m_graphModel.goal()) {
             fillColor = sf::Color(239, 68, 68);
-        } else if (node.blocked) {
-            fillColor = sf::Color(51, 65, 85);
         }
 
         m_cellShape.setPosition(m_gridOrigin.x + coord.col * m_cellSize,
