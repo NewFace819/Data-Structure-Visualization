@@ -20,11 +20,15 @@ private:
     enum class ToolSelection {
         Wall,
         Start,
-        End
+        End,
+        Remove
     };
 
     void setupToolbox();
     void refreshToolButtonStyles();
+    void handleGridInteraction(sf::Vector2f mousePosition);
+    bool isMouseOnGrid(sf::Vector2f mousePosition) const;
+    graph::NodeId nodeIdAtPosition(sf::Vector2f mousePosition) const;
     void drawGrid(sf::RenderWindow& window);
     void drawToolbox(sf::RenderWindow& window);
 
@@ -37,4 +41,5 @@ private:
     sf::Vector2f m_gridOrigin{290.0f, 90.0f};
     float m_cellSize = 24.0f;
     ToolSelection m_selectedTool = ToolSelection::Wall;
+    graph::NodeId m_lastPaintedNode = graph::kInvalidNodeId;
 };

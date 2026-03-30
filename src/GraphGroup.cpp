@@ -33,6 +33,26 @@ void GraphGroup::handleInput(const sf::Event& event)
     for (auto& button : m_toolButtons) {
         button.handleEvent(event, window);
     }
+
+    if (event.type == sf::Event::MouseButtonPressed &&
+        event.mouseButton.button == sf::Mouse::Left) {
+        const sf::Vector2f mousePosition(static_cast<float>(event.mouseButton.x),
+                                         static_cast<float>(event.mouseButton.y));
+        handleGridInteraction(mousePosition);
+        return;
+    }
+
+    if (event.type == sf::Event::MouseMoved && sf::Mouse::isButtonPressed(sf::Mouse::Left)) {
+        const sf::Vector2f mousePosition(static_cast<float>(event.mouseMove.x),
+                                         static_cast<float>(event.mouseMove.y));
+        handleGridInteraction(mousePosition);
+        return;
+    }
+
+    if (event.type == sf::Event::MouseButtonReleased &&
+        event.mouseButton.button == sf::Mouse::Left) {
+        m_lastPaintedNode = graph::kInvalidNodeId;
+    }
 }
 
 void GraphGroup::update(float dt)
@@ -70,6 +90,7 @@ void GraphGroup::setupToolbox()
     m_toolButtons.emplace_back(430.0f, 106.0f, 120.0f, 38.0f, "Wall", m_app->getFont());
     m_toolButtons.emplace_back(565.0f, 106.0f, 120.0f, 38.0f, "Start", m_app->getFont());
     m_toolButtons.emplace_back(700.0f, 106.0f, 120.0f, 38.0f, "End", m_app->getFont());
+    m_toolButtons.emplace_back(835.0f, 106.0f, 120.0f, 38.0f, "Remove", m_app->getFont());
 
     m_toolButtons[0].setCallback([this]() {
         m_selectedTool = ToolSelection::Wall;
@@ -81,6 +102,10 @@ void GraphGroup::setupToolbox()
     });
     m_toolButtons[2].setCallback([this]() {
         m_selectedTool = ToolSelection::End;
+        refreshToolButtonStyles();
+    });
+    m_toolButtons[3].setCallback([this]() {
+        m_selectedTool = ToolSelection::Remove;
         refreshToolButtonStyles();
     });
 
@@ -101,7 +126,8 @@ void GraphGroup::refreshToolButtonStyles()
         const bool isSelected =
             (i == 0 && m_selectedTool == ToolSelection::Wall) ||
             (i == 1 && m_selectedTool == ToolSelection::Start) ||
-            (i == 2 && m_selectedTool == ToolSelection::End);
+            (i == 2 && m_selectedTool == ToolSelection::End) ||
+            (i == 3 && m_selectedTool == ToolSelection::Remove);
 
         if (isSelected) {
             m_toolButtons[i].setColors(activeFill, activeHover, activeActive);
@@ -113,6 +139,54 @@ void GraphGroup::refreshToolButtonStyles()
             m_toolButtons[i].setOutline(1.0f, sf::Color(203, 213, 225));
         }
     }
+}
+
+void GraphGroup::handleGridInteraction(sf::Vector2f mousePosition)
+{
+    if (!isMouseOnGrid(mousePosition)) {
+        return;
+    }
+
+    const graph::NodeId nodeId = nodeIdAtPosition(mousePosition);
+    if (nodeId == graph::kInvalidNodeId || nodeId == m_lastPaintedNode) {
+        return;
+    }
+
+    switch (m_selectedTool) {
+    case ToolSelection::Wall:
+        m_graphModel.setBlocked(nodeId, true);
+        break;
+    case ToolSelection::Start:
+        m_graphModel.setStart(nodeId);
+        break;
+    case ToolSelection::End:
+        m_graphModel.setGoal(nodeId);
+        break;
+    case ToolSelection::Remove:
+        m_graphModel.clearCell(nodeId);
+        break;
+    }
+
+    m_lastPaintedNode = nodeId;
+}
+
+bool GraphGroup::isMouseOnGrid(sf::Vector2f mousePosition) const
+{
+    return mousePosition.x >= m_gridOrigin.x &&
+           mousePosition.y >= m_gridOrigin.y &&
+           mousePosition.x < m_gridOrigin.x + m_graphModel.cols() * m_cellSize &&
+           mousePosition.y < m_gridOrigin.y + m_graphModel.rows() * m_cellSize;
+}
+
+graph::NodeId GraphGroup::nodeIdAtPosition(sf::Vector2f mousePosition) const
+{
+    if (!isMouseOnGrid(mousePosition)) {
+        return graph::kInvalidNodeId;
+    }
+
+    const int col = static_cast<int>((mousePosition.x - m_gridOrigin.x) / m_cellSize);
+    const int row = static_cast<int>((mousePosition.y - m_gridOrigin.y) / m_cellSize);
+    return m_graphModel.nodeIdAt(row, col);
 }
 
 void GraphGroup::drawGrid(sf::RenderWindow& window)

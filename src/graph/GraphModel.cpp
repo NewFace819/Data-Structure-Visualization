@@ -177,11 +177,33 @@ bool GraphModel::setBlocked(NodeId nodeId, bool blocked) {
         return false;
     }
 
-    if (blocked && (nodeId == m_start || nodeId == m_goal)) {
-        return false;
+    if (blocked) {
+        if (nodeId == m_start) {
+            m_start = kInvalidNodeId;
+        }
+        if (nodeId == m_goal) {
+            m_goal = kInvalidNodeId;
+        }
     }
 
     node->blocked = blocked;
+    return true;
+}
+
+bool GraphModel::clearCell(NodeId nodeId) {
+    Node* node = getNode(nodeId);
+    if (!node) {
+        return false;
+    }
+
+    node->blocked = false;
+    if (nodeId == m_start) {
+        m_start = kInvalidNodeId;
+    }
+    if (nodeId == m_goal) {
+        m_goal = kInvalidNodeId;
+    }
+
     return true;
 }
 
@@ -283,6 +305,9 @@ bool GraphModel::setStart(NodeId nodeId) {
     }
 
     node->blocked = false;
+    if (nodeId == m_goal) {
+        m_goal = kInvalidNodeId;
+    }
     m_start = nodeId;
     return true;
 }
@@ -298,6 +323,9 @@ bool GraphModel::setGoal(NodeId nodeId) {
     }
 
     node->blocked = false;
+    if (nodeId == m_start) {
+        m_start = kInvalidNodeId;
+    }
     m_goal = nodeId;
     return true;
 }

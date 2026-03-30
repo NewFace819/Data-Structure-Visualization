@@ -28,6 +28,7 @@ public:
     bool moveNode(NodeId nodeId, Vec2 newPosition);
     bool renameNode(NodeId nodeId, const std::string& newName);
     bool setBlocked(NodeId nodeId, bool blocked);
+    bool clearCell(NodeId nodeId);
 
     bool addEdge(NodeId from, NodeId to, std::optional<float> manualWeight = std::nullopt);
     bool removeEdge(NodeId from, NodeId to);
