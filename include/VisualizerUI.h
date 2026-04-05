@@ -21,6 +21,7 @@ struct VisualizerUI
 
     ToolbarButton insertButton;
     ToolbarButton searchButton;
+    ToolbarButton deleteButton;
     ToolbarButton resetButton;
 
     sf::Text titleText;

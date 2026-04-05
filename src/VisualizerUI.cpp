@@ -75,15 +75,19 @@ void setupUI(VisualizerUI& ui, const sf::Font& font, sf::Vector2u windowSize)
             sf::Vector2f(leftWidth - 2 * margin, 50.f),
             sf::Vector2f(margin, 255.f));
 
+    setupButton(ui.deleteButton, font, "Delete",
+            sf::Vector2f(leftWidth - 2 * margin, 50.f),
+            sf::Vector2f(margin, 320.f));
+
     setupButton(ui.resetButton, font, "Reset",
                 sf::Vector2f(leftWidth - 2 * margin, 50.f),
-                sf::Vector2f(margin, 320.f));
+                sf::Vector2f(margin, 385.f));
 
     ui.statusText.setFont(font);
     ui.statusText.setCharacterSize(18);
     ui.statusText.setFillColor(sf::Color(220, 220, 220));
     ui.statusText.setString("Ready");
-    ui.statusText.setPosition(sf::Vector2f(margin, 395.f));
+    ui.statusText.setPosition(sf::Vector2f(margin, 460.f));
 
     ui.treePlaceholderText.setFont(font);
     ui.treePlaceholderText.setCharacterSize(28);
@@ -113,6 +117,9 @@ void drawUI(sf::RenderWindow& window, VisualizerUI& ui)
 
     window.draw(ui.searchButton.box);
     window.draw(ui.searchButton.label);
+
+    window.draw(ui.deleteButton.box);
+    window.draw(ui.deleteButton.label);
 
     window.draw(ui.resetButton.box);
     window.draw(ui.resetButton.label);

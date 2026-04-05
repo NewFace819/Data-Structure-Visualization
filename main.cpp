@@ -100,6 +100,30 @@ int main()
                         }
                     }
 
+                    if (isButtonClicked(ui.deleteButton, mousePos))
+                    {
+                        bool isValid = false;
+                        int value = getInputValue(ui, isValid);
+
+                        if (isValid == false)
+                        {
+                            setStatus(ui, "Invalid input");
+                        }
+                        else {
+                            if (tree.remove(value))
+                            {
+                                setStatus(ui, "Delete successful");
+                                ui.inputBuffer = "";
+                                ui.inputText.setString("");
+                                highlightPath.clear();
+                                searchFound = false;
+                            }
+                            else {
+                                setStatus(ui, "Value does not exist");
+                            }
+                        }
+                    }
+
                     if (isButtonClicked(ui.resetButton, mousePos))
                     {
                         tree.clear();
