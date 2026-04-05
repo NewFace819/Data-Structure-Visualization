@@ -13,7 +13,7 @@ VisualizerState::VisualizerState(App* app, const std::string& dataStructureName)
 
 void VisualizerState::init()
 {
-    // Tạo Top Bar màu Đen/Xanh sẫm tương đối tương phản với nền trắng xám
+    // Create the top bar with a dark navy color for contrast against the light background
     m_topBar.setSize(sf::Vector2f(1280.0f, 60.0f));
     m_topBar.setFillColor(sf::Color(25, 30, 45)); 
 
@@ -21,8 +21,8 @@ void VisualizerState::init()
     m_titleText.setFont(font);
     m_titleText.setString(m_dsName + " Visualizer");
     m_titleText.setCharacterSize(28);
-    m_titleText.setFillColor(sf::Color::White); // Titile màu trắng trên nền tối Topbar
-    m_titleText.setPosition(30.0f, 15.0f); // Căn lề trái của Top Bar
+    m_titleText.setFillColor(sf::Color::White); // White title text on dark top bar
+    m_titleText.setPosition(30.0f, 15.0f); // Left-aligned inside the top bar
 
     m_backButton.setCallback([this]() {
         m_app->changeState(std::make_unique<MenuState>(m_app));

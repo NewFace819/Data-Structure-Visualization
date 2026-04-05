@@ -116,6 +116,10 @@ void LinkedListGroup::initData(const std::string& input)
     m_history.clear();
     m_currentStep = 0;
     m_logicalList.clear();
+
+    // Immediately discard any leftover fade-out nodes from a previous operation
+    for (auto* n : m_dyingNodes) delete n;
+    m_dyingNodes.clear();
     
     std::vector<int> vals;
     if (input.empty()) {
@@ -275,6 +279,9 @@ void LinkedListGroup::clearList()
         m_head = m_head->next;
         delete temp;
     }
+    // Also free any nodes still mid-fade
+    for (auto* n : m_dyingNodes) delete n;
+    m_dyingNodes.clear();
 }
 
 void LinkedListGroup::loadState(int index)
@@ -319,7 +326,11 @@ void LinkedListGroup::loadState(int index)
     }
     
     for (size_t i = state.listValues.size(); i < oldNodes.size(); i++) {
-        delete oldNodes[i];
+        // Do NOT delete immediately - push to dying list so they can fade out
+        ListNode* dying = oldNodes[i];
+        dying->next  = nullptr;
+        dying->alpha = 255.0f;
+        m_dyingNodes.push_back(dying);
     }
 }
 
@@ -365,9 +376,9 @@ void LinkedListGroup::update(float dt)
         }
     }
     
-    float startX = 300.0f; // Vị trí node đầu tiên (DS Area)
-    float startY = 280.0f; // Căn gữa vùng DS
-    float gapX = 100.0f;   // Khoảng cách
+    float startX = 300.0f; // X position of the first node (DS area)
+    float startY = 280.0f; // Vertical centre of the DS area
+    float gapX = 100.0f;   // Horizontal spacing between nodes
 
     int idx = 0;
     ListNode* curr = m_head;
@@ -389,6 +400,22 @@ void LinkedListGroup::update(float dt)
 
         curr = curr->next;
         idx++;
+    }
+
+    // --- Fade-out animation for dying (deleted) nodes ---
+    // ~350 alpha units/sec  =>  node fully transparent in ~0.73 seconds
+    static const float FADE_SPEED = 350.0f;
+    for (auto* node : m_dyingNodes) {
+        node->alpha -= FADE_SPEED * dt;
+        uint8_t ua = static_cast<uint8_t>(std::max(0.0f, node->alpha));
+        node->setAlpha(ua);
+    }
+    // Remove nodes that have finished fading (iterate backwards to safely erase)
+    for (int i = static_cast<int>(m_dyingNodes.size()) - 1; i >= 0; i--) {
+        if (m_dyingNodes[i]->alpha <= 0.0f) {
+            delete m_dyingNodes[i];
+            m_dyingNodes.erase(m_dyingNodes.begin() + i);
+        }
     }
 }
 
@@ -416,6 +443,15 @@ void LinkedListGroup::drawArrow(sf::RenderWindow& window, sf::Vector2f start, sf
 void LinkedListGroup::draw(sf::RenderWindow& window)
 {
     VisualizerState::draw(window);
+
+    // Draw dying nodes first so they appear behind live nodes
+    for (auto* node : m_dyingNodes) {
+        window.draw(node->leftBg);
+        window.draw(node->rightBg);
+        window.draw(node->separator);
+        window.draw(node->pointerDot);
+        window.draw(node->text);
+    }
 
     ListNode* curr = m_head;
     while (curr != nullptr)

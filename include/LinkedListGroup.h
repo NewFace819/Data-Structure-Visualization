@@ -13,6 +13,7 @@ struct ListNode {
     sf::CircleShape pointerDot;
     sf::Text text;
     ListNode* next;
+    float alpha = 255.0f; // Current opacity (255 = fully visible, 0 = invisible)
 
     ListNode(int val, sf::Vector2f pos, const sf::Font& font) 
         : value(val), position(pos), next(nullptr) 
@@ -37,7 +38,7 @@ struct ListNode {
             leftBg.setPoint(pointsPerCorner + 2 + i, sf::Vector2f(radius + radius * std::cos(angle), height - radius + radius * std::sin(angle)));
         }
         leftBg.setOrigin(width / 2.0f, height / 2.0f);
-        leftBg.setFillColor(sf::Color(60, 60, 60)); // Nửa trái tối màu
+        leftBg.setFillColor(sf::Color(60, 60, 60)); // Left section - dark gray
         leftBg.setOutlineThickness(2.0f);
         leftBg.setOutlineColor(sf::Color(100, 100, 100));
 
@@ -55,7 +56,7 @@ struct ListNode {
         rightBg.setPoint(1 + pointsPerCorner * 2, sf::Vector2f(divX, height)); // Bottom-left (square)
         
         rightBg.setOrigin(width / 2.0f, height / 2.0f);
-        rightBg.setFillColor(sf::Color::White); // Nửa phải màu trắng
+        rightBg.setFillColor(sf::Color::White); // Right section - white (pointer area)
         rightBg.setOutlineThickness(2.0f);
         rightBg.setOutlineColor(sf::Color(100, 100, 100));
 
@@ -88,6 +89,18 @@ struct ListNode {
         pointerDot.setPosition(position.x - width/2.0f + divX + (width - divX)/2.0f, position.y);
         text.setPosition(position.x - width/2.0f + divX/2.0f, position.y);
     }
+
+    // Apply uniform alpha to every drawable component of this node
+    void setAlpha(uint8_t ua) {
+        sf::Color c;
+        c = leftBg.getFillColor();    c.a = ua; leftBg.setFillColor(c);
+        c = leftBg.getOutlineColor(); c.a = ua; leftBg.setOutlineColor(c);
+        c = rightBg.getFillColor();   c.a = ua; rightBg.setFillColor(c);
+        c = rightBg.getOutlineColor();c.a = ua; rightBg.setOutlineColor(c);
+        c = separator.getFillColor(); c.a = ua; separator.setFillColor(c);
+        c = pointerDot.getFillColor();c.a = ua; pointerDot.setFillColor(c);
+        c = text.getFillColor();      c.a = ua; text.setFillColor(c);
+    }
 };
 
 class LinkedListGroup : public VisualizerState
@@ -111,6 +124,7 @@ private:
     };
     
     ListNode* m_head;
+    std::vector<ListNode*> m_dyingNodes; // Nodes currently fading out (delete animation)
     std::vector<StepState> m_history;
     std::vector<int> m_logicalList;
     int m_currentStep = 0;
