@@ -70,24 +70,38 @@ void setupUI(VisualizerUI& ui, const sf::Font& font, sf::Vector2u windowSize)
     setupButton(ui.insertButton, font, "Insert",
                 sf::Vector2f(leftWidth - 2 * margin, 50.f),
                 sf::Vector2f(margin, 190.f));
-    
+
     setupButton(ui.searchButton, font, "Search",
-            sf::Vector2f(leftWidth - 2 * margin, 50.f),
-            sf::Vector2f(margin, 255.f));
+                sf::Vector2f(leftWidth - 2 * margin, 50.f),
+                sf::Vector2f(margin, 255.f));
 
     setupButton(ui.deleteButton, font, "Delete",
-            sf::Vector2f(leftWidth - 2 * margin, 50.f),
-            sf::Vector2f(margin, 320.f));
+                sf::Vector2f(leftWidth - 2 * margin, 50.f),
+                sf::Vector2f(margin, 320.f));
 
     setupButton(ui.resetButton, font, "Reset",
                 sf::Vector2f(leftWidth - 2 * margin, 50.f),
                 sf::Vector2f(margin, 385.f));
 
+    setupButton(ui.playButton, font, "Play",
+                sf::Vector2f((leftWidth - 3 * margin) / 2.f, 45.f),
+                sf::Vector2f(margin, 455.f));
+
+    setupButton(ui.pauseButton, font, "Pause",
+                sf::Vector2f((leftWidth - 3 * margin) / 2.f, 45.f),
+                sf::Vector2f(margin + (leftWidth - 3 * margin) / 2.f + margin, 455.f));
+
     ui.statusText.setFont(font);
     ui.statusText.setCharacterSize(18);
     ui.statusText.setFillColor(sf::Color(220, 220, 220));
     ui.statusText.setString("Ready");
-    ui.statusText.setPosition(sf::Vector2f(margin, 460.f));
+    ui.statusText.setPosition(sf::Vector2f(margin, 525.f));
+
+    ui.animationText.setFont(font);
+    ui.animationText.setCharacterSize(18);
+    ui.animationText.setFillColor(sf::Color(220, 220, 220));
+    ui.animationText.setString("Animation: idle");
+    ui.animationText.setPosition(sf::Vector2f(margin, 560.f));
 
     ui.treePlaceholderText.setFont(font);
     ui.treePlaceholderText.setCharacterSize(28);
@@ -124,7 +138,14 @@ void drawUI(sf::RenderWindow& window, VisualizerUI& ui)
     window.draw(ui.resetButton.box);
     window.draw(ui.resetButton.label);
 
+    window.draw(ui.playButton.box);
+    window.draw(ui.playButton.label);
+
+    window.draw(ui.pauseButton.box);
+    window.draw(ui.pauseButton.label);
+
     window.draw(ui.statusText);
+    window.draw(ui.animationText);
 }
 
 bool isInside(const sf::RectangleShape& box, sf::Vector2f mousePos)
@@ -181,6 +202,19 @@ void setStatus(VisualizerUI& ui, const std::string& message)
     ui.statusText.setString(message);
 }
 
+bool isHighlighted(Tree23Node* node, const std::vector<Tree23Node*>& highlightPath)
+{
+    for (int i = 0; i < (int)highlightPath.size(); i++)
+    {
+        if (highlightPath[i] == node)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 void drawArrow(sf::RenderWindow& window, sf::Vector2f start, sf::Vector2f end)
 {
     sf::Vertex line[] =
@@ -212,20 +246,9 @@ void drawArrow(sf::RenderWindow& window, sf::Vector2f start, sf::Vector2f end)
     window.draw(arrowHead);
 }
 
-bool isHighlighted(Tree23Node* node, const std::vector<Tree23Node*>& highlightPath)
-{
-    for (int i = 0; i < (int)highlightPath.size(); i++)
-    {
-        if (highlightPath[i] == node)
-        {
-            return true;
-        }
-    }
-
-    return false;
-}
-
-void drawNodeBox(sf::RenderWindow& window, const sf::Font& font, Tree23Node* node, float centerX, float topY, const std::vector<Tree23Node*>& highlightPath, bool found)
+void drawNodeBox(sf::RenderWindow& window, const sf::Font& font, Tree23Node* node,
+                 float centerX, float topY,
+                 const std::vector<Tree23Node*>& highlightPath, bool found)
 {
     float keyWidth = 55.f;
     float nodeHeight = 45.f;
@@ -235,6 +258,7 @@ void drawNodeBox(sf::RenderWindow& window, const sf::Font& font, Tree23Node* nod
     sf::RectangleShape box;
     box.setSize(sf::Vector2f(totalWidth, nodeHeight));
     box.setPosition(sf::Vector2f(leftX, topY));
+
     if (isHighlighted(node, highlightPath))
     {
         if (found)
@@ -296,9 +320,7 @@ void drawTreeRecursive(sf::RenderWindow& window, const sf::Font& font, Tree23Nod
         return;
     }
 
-    float keyWidth = 55.f;
     float nodeHeight = 45.f;
-    float totalWidth = keyWidth * (float)node->keyCount;
 
     drawNodeBox(window, font, node, centerX, topY, highlightPath, found);
 
@@ -318,7 +340,6 @@ void drawTreeRecursive(sf::RenderWindow& window, const sf::Font& font, Tree23Nod
         if (node->child[0] != nullptr)
         {
             float childX = centerX - offset;
-            float childWidth = 55.f * (float)node->child[0]->keyCount;
             drawArrow(window,
                       sf::Vector2f(parentBottomX, parentBottomY),
                       sf::Vector2f(childX, nextY));

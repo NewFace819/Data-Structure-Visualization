@@ -4,7 +4,9 @@
 #include "VisualizerUI.h"
 
 bool tryInsertFromInput(Tree23& tree, VisualizerUI& ui,
-                        std::vector<Tree23Node*>& highlightPath, bool& searchFound)
+                        std::vector<Tree23Node*>& highlightPath, bool& searchFound,
+                        std::vector<Tree23Node*>& fullSearchPath,
+                        int& currentAnimationStep, bool& isPlaying)
 {
     bool isValid = false;
     int value = getInputValue(ui, isValid);
@@ -22,11 +24,28 @@ bool tryInsertFromInput(Tree23& tree, VisualizerUI& ui,
         ui.inputText.setString("");
         highlightPath.clear();
         searchFound = false;
+        fullSearchPath.clear();
+        currentAnimationStep = -1;
+        isPlaying = false;
+        ui.animationText.setString("Animation: idle");
         return true;
     }
 
     setStatus(ui, "Value already exists");
     return false;
+}
+
+void resetAnimation(std::vector<Tree23Node*>& highlightPath,
+                    std::vector<Tree23Node*>& fullSearchPath,
+                    int& currentAnimationStep, bool& isPlaying,
+                    bool& searchFound, VisualizerUI& ui)
+{
+    highlightPath.clear();
+    fullSearchPath.clear();
+    currentAnimationStep = -1;
+    isPlaying = false;
+    searchFound = false;
+    ui.animationText.setString("Animation: idle");
 }
 
 int main()
@@ -46,7 +65,14 @@ int main()
     Tree23 tree;
 
     std::vector<Tree23Node*> highlightPath;
+    std::vector<Tree23Node*> fullSearchPath;
+
     bool searchFound = false;
+    bool isPlaying = false;
+    int currentAnimationStep = -1;
+
+    sf::Clock animationClock;
+    float animationDelay = 0.8f;
 
     while (window.isOpen())
     {
@@ -75,7 +101,8 @@ int main()
 
                     if (isButtonClicked(ui.insertButton, mousePos))
                     {
-                        tryInsertFromInput(tree, ui, highlightPath, searchFound);
+                        tryInsertFromInput(tree, ui, highlightPath, searchFound,
+                                           fullSearchPath, currentAnimationStep, isPlaying);
                     }
 
                     if (isButtonClicked(ui.searchButton, mousePos))
@@ -88,14 +115,45 @@ int main()
                             setStatus(ui, "Invalid input");
                         }
                         else {
-                            highlightPath = tree.getSearchPath(value, searchFound);
+                            fullSearchPath = tree.getSearchPath(value, searchFound);
+                            highlightPath.clear();
 
-                            if (searchFound)
+                            if (fullSearchPath.empty())
                             {
-                                setStatus(ui, "Found");
+                                if (searchFound)
+                                {
+                                    setStatus(ui, "Found");
+                                }
+                                else {
+                                    setStatus(ui, "Not found");
+                                }
+
+                                isPlaying = false;
+                                currentAnimationStep = -1;
+                                ui.animationText.setString("Animation: idle");
                             }
                             else {
-                                setStatus(ui, "Not found");
+                                currentAnimationStep = 0;
+                                highlightPath.push_back(fullSearchPath[0]);
+
+                                if ((int)fullSearchPath.size() > 1)
+                                {
+                                    isPlaying = true;
+                                    ui.animationText.setString("Animation: playing");
+                                    animationClock.restart();
+                                }
+                                else {
+                                    isPlaying = false;
+                                    ui.animationText.setString("Animation: finished");
+
+                                    if (searchFound)
+                                    {
+                                        setStatus(ui, "Found");
+                                    }
+                                    else {
+                                        setStatus(ui, "Not found");
+                                    }
+                                }
                             }
                         }
                     }
@@ -115,8 +173,9 @@ int main()
                                 setStatus(ui, "Delete successful");
                                 ui.inputBuffer = "";
                                 ui.inputText.setString("");
-                                highlightPath.clear();
-                                searchFound = false;
+                                resetAnimation(highlightPath, fullSearchPath,
+                                               currentAnimationStep, isPlaying,
+                                               searchFound, ui);
                             }
                             else {
                                 setStatus(ui, "Value does not exist");
@@ -130,8 +189,25 @@ int main()
                         ui.inputBuffer = "";
                         ui.inputText.setString("");
                         setStatus(ui, "Tree reset");
-                        highlightPath.clear();
-                        searchFound = false;
+                        resetAnimation(highlightPath, fullSearchPath,
+                                       currentAnimationStep, isPlaying,
+                                       searchFound, ui);
+                    }
+
+                    if (isButtonClicked(ui.playButton, mousePos))
+                    {
+                        if (!fullSearchPath.empty() && currentAnimationStep + 1 < (int)fullSearchPath.size())
+                        {
+                            isPlaying = true;
+                            ui.animationText.setString("Animation: playing");
+                            animationClock.restart();
+                        }
+                    }
+
+                    if (isButtonClicked(ui.pauseButton, mousePos))
+                    {
+                        isPlaying = false;
+                        ui.animationText.setString("Animation: paused");
                     }
                 }
             }
@@ -146,7 +222,39 @@ int main()
             {
                 if (ui.isTyping && event.key.code == sf::Keyboard::Enter)
                 {
-                    tryInsertFromInput(tree, ui, highlightPath, searchFound);
+                    tryInsertFromInput(tree, ui, highlightPath, searchFound,
+                                       fullSearchPath, currentAnimationStep, isPlaying);
+                }
+            }
+        }
+
+        if (isPlaying)
+        {
+            if (animationClock.getElapsedTime().asSeconds() >= animationDelay)
+            {
+                animationClock.restart();
+
+                if (currentAnimationStep + 1 < (int)fullSearchPath.size())
+                {
+                    currentAnimationStep++;
+                    highlightPath.clear();
+
+                    for (int i = 0; i <= currentAnimationStep; i++)
+                    {
+                        highlightPath.push_back(fullSearchPath[i]);
+                    }
+                }
+                else {
+                    isPlaying = false;
+                    ui.animationText.setString("Animation: finished");
+
+                    if (searchFound)
+                    {
+                        setStatus(ui, "Found");
+                    }
+                    else {
+                        setStatus(ui, "Not found");
+                    }
                 }
             }
         }

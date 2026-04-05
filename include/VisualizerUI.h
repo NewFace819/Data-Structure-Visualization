@@ -2,6 +2,7 @@
 
 #include <SFML/Graphics.hpp>
 #include <string>
+#include <vector>
 #include "Tree23.h"
 
 struct ToolbarButton
@@ -23,10 +24,13 @@ struct VisualizerUI
     ToolbarButton searchButton;
     ToolbarButton deleteButton;
     ToolbarButton resetButton;
+    ToolbarButton playButton;
+    ToolbarButton pauseButton;
 
     sf::Text titleText;
     sf::Text statusText;
     sf::Text treePlaceholderText;
+    sf::Text animationText;
 
     std::string inputBuffer;
     bool isTyping;
@@ -48,4 +52,5 @@ void handleTextEntered(VisualizerUI& ui, sf::Uint32 unicode);
 int getInputValue(const VisualizerUI& ui, bool& isValid);
 void setStatus(VisualizerUI& ui, const std::string& message);
 
-void drawTreeVisual(sf::RenderWindow& window, VisualizerUI& ui, const Tree23& tree, const std::vector<Tree23Node*>& highlightPath, bool found);
+void drawTreeVisual(sf::RenderWindow& window, VisualizerUI& ui, const Tree23& tree,
+                    const std::vector<Tree23Node*>& highlightPath, bool found);
