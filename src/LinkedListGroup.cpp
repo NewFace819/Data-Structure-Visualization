@@ -106,9 +106,9 @@ void LinkedListGroup::prepNewOperation()
     }
 }
 
-void LinkedListGroup::pushStep(int blockId, int highlightLine, int activeIdx, int foundIdx)
+void LinkedListGroup::pushStep(int blockId, int highlightLine, int activeIdx, int foundIdx, const std::string& msg)
 {
-    m_history.push_back({m_logicalList, blockId, highlightLine, activeIdx, foundIdx});
+    m_history.push_back({m_logicalList, blockId, highlightLine, activeIdx, foundIdx, msg});
 }
 
 void LinkedListGroup::initData(const std::string& input)
@@ -189,29 +189,39 @@ void LinkedListGroup::deleteNodeByValue(int val)
 {
     prepNewOperation();
     pushStep(1, 0, -1); 
-    if (m_logicalList.empty()) { pushStep(1, 1, -1); stepForward(); m_isPaused = true; m_sidebar.setPlayButtonText("Play"); return; }
+    if (m_logicalList.empty()) { 
+        pushStep(1, 1, -1, -1, "List is empty!"); 
+        m_isPaused = false; m_sidebar.setPlayButtonText("Pause"); 
+        return; 
+    }
     
     pushStep(1, 2, 0); 
     if (m_logicalList[0] == val) {
         m_logicalList.erase(m_logicalList.begin());
         pushStep(1, 2, -1); 
-        stepForward(); m_isPaused = true; m_sidebar.setPlayButtonText("Play");
+        m_isPaused = false; m_sidebar.setPlayButtonText("Pause");
         return;
     }
     
-    pushStep(1, 3, 0); 
+    pushStep(1, 4, 0); 
     int currIdx = 0;
+    bool found = false;
     while (currIdx < (int)m_logicalList.size() - 1) {
         pushStep(1, 4, currIdx); 
-        if (m_logicalList[currIdx+1] == val) break;
+        if (m_logicalList[currIdx+1] == val) {
+            found = true;
+            break;
+        }
         currIdx++;
         pushStep(1, 5, currIdx); 
     }
     
-    pushStep(1, 6, currIdx); 
-    if (currIdx < (int)m_logicalList.size() - 1) {
+    if (found) {
+        pushStep(1, 6, currIdx);
         m_logicalList.erase(m_logicalList.begin() + currIdx + 1);
-        pushStep(1, 7, currIdx); 
+        pushStep(1, 7, currIdx);
+    } else {
+        pushStep(1, 4, -1, -1, "Value " + std::to_string(val) + " not found!");
     }
     m_isPaused = false; m_sidebar.setPlayButtonText("Pause");
 }
@@ -219,17 +229,24 @@ void LinkedListGroup::deleteNodeByValue(int val)
 void LinkedListGroup::searchNode(int val)
 {
     prepNewOperation();
-    pushStep(2, 0, -1); 
-    pushStep(2, 1, 0); 
-    pushStep(2, 2, 0); 
+    pushStep(2, 0, -1);
     
+    if (m_logicalList.empty()) {
+        pushStep(2, 1, -1); 
+        pushStep(2, 3, -1); 
+        pushStep(2, 8, -1, -1, "List is empty!"); 
+        m_isPaused = false; m_sidebar.setPlayButtonText("Pause"); return;
+    }
+    pushStep(2, 1, 0);
+    pushStep(2, 2, 0);
+
     int currIdx = 0;
     while (currIdx < (int)m_logicalList.size()) {
         pushStep(2, 3, currIdx); 
         pushStep(2, 4, currIdx); 
         if (m_logicalList[currIdx] == val) {
             pushStep(2, 4, currIdx, currIdx); 
-            stepForward(); m_isPaused = true; m_sidebar.setPlayButtonText("Play");
+            m_isPaused = false; m_sidebar.setPlayButtonText("Pause");
             return;
         }
         currIdx++;
@@ -238,7 +255,7 @@ void LinkedListGroup::searchNode(int val)
             pushStep(2, 6, currIdx); 
         }
     }
-    pushStep(2, 8, -1); 
+    pushStep(2, 8, -1, -1, "Value " + std::to_string(val) + " not found!"); 
     m_isPaused = false; m_sidebar.setPlayButtonText("Pause");
 }
 
@@ -251,9 +268,15 @@ void LinkedListGroup::updateNode(const std::string& input)
     std::getline(ss, token, ','); try { newVal = std::stoi(token); } catch(...) {}
     
     prepNewOperation();
-    pushStep(3, 0, -1); 
-    pushStep(3, 1, 0); 
+    pushStep(3, 0, -1);
     
+    if (m_logicalList.empty()) {
+        pushStep(3, 1, -1); 
+        pushStep(3, 2, -1, -1, "List is empty!"); 
+        m_isPaused = false; m_sidebar.setPlayButtonText("Pause"); return;
+    }
+    pushStep(3, 1, 0);
+
     int currIdx = 0;
     while(currIdx < (int)m_logicalList.size()) {
         pushStep(3, 2, currIdx); 
@@ -262,13 +285,14 @@ void LinkedListGroup::updateNode(const std::string& input)
             m_logicalList[currIdx] = newVal;
             pushStep(3, 4, currIdx, currIdx); 
             pushStep(3, 5, currIdx, currIdx); 
-            stepForward(); m_isPaused = true; m_sidebar.setPlayButtonText("Play"); return;
+            m_isPaused = false; m_sidebar.setPlayButtonText("Pause"); return;
         }
         currIdx++;
         if (currIdx < (int)m_logicalList.size()) {
              pushStep(3, 7, currIdx); 
         }
     }
+    pushStep(3, 2, -1, -1, "Value " + std::to_string(oldVal) + " not found!");
     m_isPaused = false; m_sidebar.setPlayButtonText("Pause");
 }
 
@@ -279,7 +303,6 @@ void LinkedListGroup::clearList()
         m_head = m_head->next;
         delete temp;
     }
-    // Also free any nodes still mid-fade
     for (auto* n : m_dyingNodes) delete n;
     m_dyingNodes.clear();
 }
@@ -291,6 +314,10 @@ void LinkedListGroup::loadState(int index)
     
     setCode(CODE_BLOCKS[state.codeBlockId]);
     highlightCodeLine(state.codeHighlightLine);
+
+    if (!state.notificationMsg.empty()) {
+        showNotification(state.notificationMsg);
+    }
 
     std::vector<ListNode*> oldNodes;
     ListNode* curr = m_head;
@@ -304,7 +331,10 @@ void LinkedListGroup::loadState(int index)
         if (i < oldNodes.size()) {
             n = oldNodes[i];
             n->value = state.listValues[i];
-            n->text.setString(std::to_string(n->value)); 
+            n->text.setString(std::to_string(n->value));
+            sf::FloatRect bounds = n->text.getLocalBounds();
+            n->text.setOrigin(bounds.left + bounds.width  / 2.0f,
+                              bounds.top  + bounds.height / 2.0f);
         } else {
             // Spawn new node slightly off the end position
             float spawnX = 300.0f + oldNodes.size() * 100.0f;

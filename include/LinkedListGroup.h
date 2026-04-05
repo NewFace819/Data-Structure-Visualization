@@ -121,6 +121,7 @@ private:
         int codeHighlightLine;
         int activeNodeIndex;
         int foundNodeIndex;
+        std::string notificationMsg;
     };
     
     ListNode* m_head;
@@ -136,7 +137,7 @@ private:
     void updateNode(const std::string& input);
     
     void prepNewOperation();
-    void pushStep(int blockId, int highlightLine, int activeIdx, int foundIdx = -1);
+    void pushStep(int blockId, int highlightLine, int activeIdx, int foundIdx = -1, const std::string& msg = "");
     void loadState(int index);
     void clearList();
 
