@@ -20,6 +20,7 @@ struct VisualizerUI
     sf::Text inputText;
 
     ToolbarButton insertButton;
+    ToolbarButton searchButton;
     ToolbarButton resetButton;
 
     sf::Text titleText;
@@ -46,4 +47,4 @@ void handleTextEntered(VisualizerUI& ui, sf::Uint32 unicode);
 int getInputValue(const VisualizerUI& ui, bool& isValid);
 void setStatus(VisualizerUI& ui, const std::string& message);
 
-void drawTreeVisual(sf::RenderWindow& window, VisualizerUI& ui, const Tree23& tree);
+void drawTreeVisual(sf::RenderWindow& window, VisualizerUI& ui, const Tree23& tree, const std::vector<Tree23Node*>& highlightPath, bool found);

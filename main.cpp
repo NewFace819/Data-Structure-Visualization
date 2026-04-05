@@ -1,6 +1,33 @@
 #include <SFML/Graphics.hpp>
+#include <vector>
 #include "Tree23.h"
 #include "VisualizerUI.h"
+
+bool tryInsertFromInput(Tree23& tree, VisualizerUI& ui,
+                        std::vector<Tree23Node*>& highlightPath, bool& searchFound)
+{
+    bool isValid = false;
+    int value = getInputValue(ui, isValid);
+
+    if (isValid == false)
+    {
+        setStatus(ui, "Invalid input");
+        return false;
+    }
+
+    if (tree.insert(value))
+    {
+        setStatus(ui, "Insert successful");
+        ui.inputBuffer = "";
+        ui.inputText.setString("");
+        highlightPath.clear();
+        searchFound = false;
+        return true;
+    }
+
+    setStatus(ui, "Value already exists");
+    return false;
+}
 
 int main()
 {
@@ -17,6 +44,9 @@ int main()
     setupUI(ui, font, window.getSize());
 
     Tree23 tree;
+
+    std::vector<Tree23Node*> highlightPath;
+    bool searchFound = false;
 
     while (window.isOpen())
     {
@@ -45,6 +75,11 @@ int main()
 
                     if (isButtonClicked(ui.insertButton, mousePos))
                     {
+                        tryInsertFromInput(tree, ui, highlightPath, searchFound);
+                    }
+
+                    if (isButtonClicked(ui.searchButton, mousePos))
+                    {
                         bool isValid = false;
                         int value = getInputValue(ui, isValid);
 
@@ -53,14 +88,14 @@ int main()
                             setStatus(ui, "Invalid input");
                         }
                         else {
-                            if (tree.insert(value))
+                            highlightPath = tree.getSearchPath(value, searchFound);
+
+                            if (searchFound)
                             {
-                                setStatus(ui, "Insert successful");
-                                ui.inputBuffer = "";
-                                ui.inputText.setString("");
+                                setStatus(ui, "Found");
                             }
                             else {
-                                setStatus(ui, "Value already exists");
+                                setStatus(ui, "Not found");
                             }
                         }
                     }
@@ -71,6 +106,8 @@ int main()
                         ui.inputBuffer = "";
                         ui.inputText.setString("");
                         setStatus(ui, "Tree reset");
+                        highlightPath.clear();
+                        searchFound = false;
                     }
                 }
             }
@@ -81,11 +118,18 @@ int main()
                     handleTextEntered(ui, event.text.unicode);
                 }
             }
+            else if (event.type == sf::Event::KeyPressed)
+            {
+                if (ui.isTyping && event.key.code == sf::Keyboard::Enter)
+                {
+                    tryInsertFromInput(tree, ui, highlightPath, searchFound);
+                }
+            }
         }
 
         window.clear();
         drawUI(window, ui);
-        drawTreeVisual(window, ui, tree);
+        drawTreeVisual(window, ui, tree, highlightPath, searchFound);
         window.display();
     }
 

@@ -51,4 +51,6 @@ public:
     std::vector<int> getInorder() const;
     std::vector<std::vector<std::string>> getLevelOrderText() const;
     std::string toInorderString() const;
+
+    std::vector<Tree23Node*> getSearchPath(int value, bool& found) const;
 };

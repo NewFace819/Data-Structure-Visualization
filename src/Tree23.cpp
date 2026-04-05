@@ -495,3 +495,27 @@ std::vector<std::vector<std::string>> Tree23::getLevelOrderText() const
 
     return result;
 }
+
+std::vector<Tree23Node*> Tree23::getSearchPath(int value, bool& found) const
+{
+    std::vector<Tree23Node*> path;
+    found = false;
+
+    Tree23Node* cur = root;
+
+    while (cur != nullptr)
+    {
+        path.push_back(cur);
+
+        if (cur->contains(value))
+        {
+            found = true;
+            return path;
+        }
+
+        int childIndex = getChildIndex(cur, value);
+        cur = cur->child[childIndex];
+    }
+
+    return path;
+}
