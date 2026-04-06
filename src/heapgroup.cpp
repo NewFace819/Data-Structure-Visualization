@@ -50,7 +50,7 @@ void HeapGroup::init()
 		"	clear();",
 		"	for (int value : data) {",
 		"		push(value);",
-		"  }"
+		"  }",
 		"}"
 		});
 
@@ -232,8 +232,8 @@ void HeapGroup::drawTree(sf::RenderWindow& window, const HeapStep& currentStep)
 		int maxNodesInLevel = std::pow(2, level);
 		int positionInLevel = index - (maxNodesInLevel - 1);
 
-		float HorizontalSpacing = HorizontalSpacing / std::pow(2, level);
-		float x = startX - (HorizontalSpacing * (maxNodesInLevel - 1)) / 2.0f + positionInLevel * horizontalGap;
+		float levelHorizontalSpacing = HorizontalSpacing / std::pow(2, level);
+		float x = startX - (levelHorizontalSpacing * (maxNodesInLevel - 1)) / 2.0f + positionInLevel * levelHorizontalSpacing;
 		float y = startY + level * VerticalSpacing;
 
 		return { x, y };
@@ -245,8 +245,8 @@ void HeapGroup::drawTree(sf::RenderWindow& window, const HeapStep& currentStep)
 		sf::Vector2f parentPos = getPosition(parentIndex);
 
 		sf::Vertex line[] = {
-			sf::Vertex(parentPos, sf::Color::(200, 200, 200)),
-			sf::Vertex(childPos, sf::Color::(200, 200, 200))
+			sf::Vertex(parentPos, sf::Color(200, 200, 200)),
+			sf::Vertex(childPos, sf::Color(200, 200, 200))
 		};
 		window.draw(line, 2, sf::Lines);
 	}
