@@ -1,5 +1,6 @@
 #include <SFML/Graphics.hpp>
 #include <vector>
+#include <string>
 #include "Tree23.h"
 #include "VisualizerUI.h"
 
@@ -48,6 +49,19 @@ void resetAnimation(std::vector<Tree23Node*>& highlightPath,
     ui.animationText.setString("Animation: idle");
 }
 
+void resetInsertAnimation(std::vector<Tree23Step>& insertSteps,
+                          int& currentInsertStep,
+                          bool& isInsertPlaying,
+                          int& pendingInsertValue,
+                          VisualizerUI& ui)
+{
+    insertSteps.clear();
+    currentInsertStep = -1;
+    isInsertPlaying = false;
+    pendingInsertValue = 0;
+    ui.animationText.setString("Animation: idle");
+}
+
 int main()
 {
     sf::RenderWindow window(sf::VideoMode(1400, 800), "2-3 Tree Visualizer");
@@ -66,10 +80,14 @@ int main()
 
     std::vector<Tree23Node*> highlightPath;
     std::vector<Tree23Node*> fullSearchPath;
+    std::vector<Tree23Step> insertSteps;
 
     bool searchFound = false;
     bool isPlaying = false;
     int currentAnimationStep = -1;
+    bool isInsertPlaying = false;
+    int currentInsertStep = -1;
+    int pendingInsertValue = 0;
 
     sf::Clock animationClock;
     float animationDelay = 0.8f;
@@ -101,8 +119,34 @@ int main()
 
                     if (isButtonClicked(ui.insertButton, mousePos))
                     {
-                        tryInsertFromInput(tree, ui, highlightPath, searchFound,
-                                           fullSearchPath, currentAnimationStep, isPlaying);
+                        bool isValid = false;
+                        int value = getInputValue(ui, isValid);
+
+                        if (isValid == false)
+                        {
+                            setStatus(ui, "Invalid input");
+                        }
+                        else if (tree.search(value))
+                        {
+                        setStatus(ui, "Value already exists");
+                        }
+                        else {
+                            insertSteps = tree.getInsertSteps(value);
+                            pendingInsertValue = value;
+                            currentInsertStep = 0;
+                            isInsertPlaying = true;
+
+                            if (!insertSteps.empty())
+                            {
+                                ui.animationText.setString("Animation: " + insertSteps[0].action);
+                            }
+                            else {
+                                ui.animationText.setString("Animation: idle");
+                            }
+
+                            animationClock.restart();
+                            setStatus(ui, "Insert animation started");
+                        }
                     }
 
                     if (isButtonClicked(ui.searchButton, mousePos))
@@ -176,6 +220,8 @@ int main()
                                 resetAnimation(highlightPath, fullSearchPath,
                                                currentAnimationStep, isPlaying,
                                                searchFound, ui);
+                                resetInsertAnimation(insertSteps, currentInsertStep, 
+                                                     isInsertPlaying, pendingInsertValue, ui);
                             }
                             else {
                                 setStatus(ui, "Value does not exist");
@@ -192,11 +238,20 @@ int main()
                         resetAnimation(highlightPath, fullSearchPath,
                                        currentAnimationStep, isPlaying,
                                        searchFound, ui);
+                        resetInsertAnimation(insertSteps, currentInsertStep, 
+                                             isInsertPlaying, pendingInsertValue, ui);
                     }
 
                     if (isButtonClicked(ui.playButton, mousePos))
                     {
-                        if (!fullSearchPath.empty() && currentAnimationStep + 1 < (int)fullSearchPath.size())
+                        if (!insertSteps.empty() && currentInsertStep >= 0 && currentInsertStep + 1 < (int)insertSteps.size())
+                        {
+                            isInsertPlaying = true;
+                            ui.animationText.setString("Animation: playing insert");
+                            animationClock.restart();
+                        }
+
+                        else if (!fullSearchPath.empty() && currentAnimationStep + 1 < (int)fullSearchPath.size())
                         {
                             isPlaying = true;
                             ui.animationText.setString("Animation: playing");
@@ -207,6 +262,7 @@ int main()
                     if (isButtonClicked(ui.pauseButton, mousePos))
                     {
                         isPlaying = false;
+                        isInsertPlaying = false;
                         ui.animationText.setString("Animation: paused");
                     }
                 }
@@ -222,12 +278,65 @@ int main()
             {
                 if (ui.isTyping && event.key.code == sf::Keyboard::Enter)
                 {
-                    tryInsertFromInput(tree, ui, highlightPath, searchFound,
-                                       fullSearchPath, currentAnimationStep, isPlaying);
+                    bool isValid = false;
+                    int value = getInputValue(ui, isValid);
+
+                    if (isValid == false)
+                    {
+                        setStatus(ui, "Invalid input");
+                    }
+                    else if (tree.search(value))
+                    {
+                        setStatus(ui, "Value already exists");
+                    }
+                    else {
+                        insertSteps = tree.getInsertSteps(value);
+                        pendingInsertValue = value;
+                        currentInsertStep = 0;
+                        isInsertPlaying = true;
+
+                        if (!insertSteps.empty())
+                        {
+                            ui.animationText.setString("Animation: " + insertSteps[0].action);
+                        }
+                        else {
+                            ui.animationText.setString("Animation: idle");
+                        }
+
+                        animationClock.restart();
+                        setStatus(ui, "Insert animation started");
+                    }
                 }
             }
         }
 
+        if (isInsertPlaying)
+        {
+            if (animationClock.getElapsedTime().asSeconds() >= animationDelay)
+            {
+                animationClock.restart();
+
+                if (currentInsertStep + 1 < (int)insertSteps.size())
+                {
+                    currentInsertStep++;
+                    ui.animationText.setString("Animation: " + insertSteps[currentInsertStep].action);
+                }
+                else {
+                    tree.insert(pendingInsertValue);
+
+                    ui.inputBuffer = "";
+                    ui.inputText.setString("");
+                    setStatus(ui, "Insert successful");
+
+                    insertSteps.clear();
+                    currentInsertStep = -1;
+                    isInsertPlaying = false;
+                    pendingInsertValue = 0;
+                    ui.animationText.setString("Animation: finished insert");
+                }
+            }
+        }
+        
         if (isPlaying)
         {
             if (animationClock.getElapsedTime().asSeconds() >= animationDelay)

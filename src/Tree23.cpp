@@ -519,3 +519,56 @@ std::vector<Tree23Node*> Tree23::getSearchPath(int value, bool& found) const
 
     return path;
 }
+
+static void addStep(std::vector<Tree23Step>& steps, const std::string& action, int value)
+{
+    steps.push_back(Tree23Step(action, -1, value));
+}
+
+std::vector<Tree23Step> Tree23::getInsertSteps(int value) const
+{
+    std::vector<Tree23Step> steps;
+    addStep(steps, "Start insert", value);
+
+    if (search(value))
+    {
+        addStep(steps, "Value already exists", value);
+        return steps;
+    }
+
+    if (root == nullptr)
+    {
+        addStep(steps, "Tree is empty", value);
+        addStep(steps, "Create root", value);
+        addStep(steps, "Finish insert", value);
+        return steps;
+    }
+
+    Tree23Node* cur = root;
+
+    while (cur != nullptr)
+    {
+        addStep(steps, "Visit node", value);
+
+        if (cur->isLeaf())
+        {
+            if (cur->keyCount == 1)
+            {
+                addStep(steps, "Insert into leaf", value);
+            }
+            else {
+                addStep(steps, "Split leaf", value);
+                addStep(steps, "Promote middle key", value);
+            }
+
+            addStep(steps, "Finish insert", value);
+            return steps;
+        }
+
+        int childIndex = getChildIndex(cur, value);
+        cur = cur->child[childIndex];
+    }
+
+    addStep(steps, "Finish insert", value);
+    return steps;
+}

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Tree23Step.h"
 #include "Tree23Node.h"
 #include <vector>
 #include <string>
@@ -53,4 +54,5 @@ public:
     std::string toInorderString() const;
 
     std::vector<Tree23Node*> getSearchPath(int value, bool& found) const;
+    std::vector<Tree23Step> getInsertSteps(int value) const;
 };
