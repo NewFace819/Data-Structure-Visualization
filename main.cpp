@@ -62,6 +62,19 @@ void resetInsertAnimation(std::vector<Tree23Step>& insertSteps,
     ui.animationText.setString("Animation: idle");
 }
 
+void resetDeleteAnimation(std::vector<Tree23Step>& deleteSteps,
+                          int& currentDeleteStep,
+                          bool& isDeletePlaying,
+                          int& pendingDeleteValue,
+                          VisualizerUI& ui)
+{
+    deleteSteps.clear();
+    currentDeleteStep = -1;
+    isDeletePlaying = false;
+    pendingDeleteValue = 0;
+    ui.animationText.setString("Animation: idle");
+}
+
 int main()
 {
     sf::RenderWindow window(sf::VideoMode(1400, 800), "2-3 Tree Visualizer");
@@ -81,6 +94,7 @@ int main()
     std::vector<Tree23Node*> highlightPath;
     std::vector<Tree23Node*> fullSearchPath;
     std::vector<Tree23Step> insertSteps;
+    std::vector<Tree23Step> deleteSteps;
 
     bool searchFound = false;
     bool isPlaying = false;
@@ -88,6 +102,9 @@ int main()
     bool isInsertPlaying = false;
     int currentInsertStep = -1;
     int pendingInsertValue = 0;
+    bool isDeletePlaying = false;
+    int currentDeleteStep = -1;
+    int pendingDeleteValue = 0;
 
     sf::Clock animationClock;
     float animationDelay = 0.8f;
@@ -211,21 +228,26 @@ int main()
                         {
                             setStatus(ui, "Invalid input");
                         }
+                        else if (tree.search(value) == false)
+                        {
+                            setStatus(ui, "Value does not exist");
+                        }
                         else {
-                            if (tree.remove(value))
+                            deleteSteps = tree.getDeleteSteps(value);
+                            pendingDeleteValue = value;
+                            currentDeleteStep = 0;
+                            isDeletePlaying = true;
+
+                            if (!deleteSteps.empty())
                             {
-                                setStatus(ui, "Delete successful");
-                                ui.inputBuffer = "";
-                                ui.inputText.setString("");
-                                resetAnimation(highlightPath, fullSearchPath,
-                                               currentAnimationStep, isPlaying,
-                                               searchFound, ui);
-                                resetInsertAnimation(insertSteps, currentInsertStep, 
-                                                     isInsertPlaying, pendingInsertValue, ui);
+                                ui.animationText.setString("Animation: " + deleteSteps[0].action);
                             }
                             else {
-                                setStatus(ui, "Value does not exist");
+                                ui.animationText.setString("Animation: idle");
                             }
+
+                            animationClock.restart();
+                            setStatus(ui, "Delete animation started");
                         }
                     }
 
@@ -240,6 +262,8 @@ int main()
                                        searchFound, ui);
                         resetInsertAnimation(insertSteps, currentInsertStep, 
                                              isInsertPlaying, pendingInsertValue, ui);
+                        resetDeleteAnimation(deleteSteps, currentDeleteStep,
+                                             isDeletePlaying, pendingDeleteValue, ui);
                     }
 
                     if (isButtonClicked(ui.playButton, mousePos))
@@ -250,7 +274,12 @@ int main()
                             ui.animationText.setString("Animation: playing insert");
                             animationClock.restart();
                         }
-
+                        else if (!deleteSteps.empty() && currentDeleteStep >= 0 && currentDeleteStep + 1 < (int)deleteSteps.size())
+                        {
+                            isDeletePlaying = true;
+                            ui.animationText.setString("Animation: playing delete");
+                            animationClock.restart();
+                        }
                         else if (!fullSearchPath.empty() && currentAnimationStep + 1 < (int)fullSearchPath.size())
                         {
                             isPlaying = true;
@@ -263,6 +292,7 @@ int main()
                     {
                         isPlaying = false;
                         isInsertPlaying = false;
+                        isDeletePlaying = false;
                         ui.animationText.setString("Animation: paused");
                     }
                 }
@@ -333,10 +363,48 @@ int main()
                     isInsertPlaying = false;
                     pendingInsertValue = 0;
                     ui.animationText.setString("Animation: finished insert");
+
+                    deleteSteps.clear();
+                    currentDeleteStep = -1;
+                    isDeletePlaying = false;
+                    pendingDeleteValue = 0;
                 }
             }
         }
-        
+
+        if (isDeletePlaying)
+        {
+            if (animationClock.getElapsedTime().asSeconds() >= animationDelay)
+            {
+                animationClock.restart();
+
+                if (currentDeleteStep + 1 < (int)deleteSteps.size())
+                {
+                    currentDeleteStep++;
+                    ui.animationText.setString("Animation: " + deleteSteps[currentDeleteStep].action);
+                }
+                else {
+                    tree.remove(pendingDeleteValue);
+
+                    ui.inputBuffer = "";
+                    ui.inputText.setString("");
+                    setStatus(ui, "Delete successful");
+
+                    deleteSteps.clear();
+                    currentDeleteStep = -1;
+                    isDeletePlaying = false;
+                    pendingDeleteValue = 0;
+                    ui.animationText.setString("Animation: finished delete");
+
+                    highlightPath.clear();
+                    fullSearchPath.clear();
+                    currentAnimationStep = -1;
+                    isPlaying = false;
+                    searchFound = false;
+                }
+            }
+        }
+
         if (isPlaying)
         {
             if (animationClock.getElapsedTime().asSeconds() >= animationDelay)

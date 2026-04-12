@@ -571,4 +571,46 @@ std::vector<Tree23Step> Tree23::getInsertSteps(int value) const
 
     addStep(steps, "Finish insert", value);
     return steps;
+    
+}
+
+std::vector<Tree23Step> Tree23::getDeleteSteps(int value) const
+{
+    std::vector<Tree23Step> steps;
+    addStep(steps, "Start delete", value);
+
+    if (root == nullptr)
+    {
+        addStep(steps, "Tree is empty", value);
+        return steps;
+    }
+
+    Tree23Node* cur = root;
+    bool found = false;
+
+    while (cur != nullptr)
+    {
+        addStep(steps, "Visit node", value);
+
+        if (cur->contains(value))
+        {
+            found = true;
+            break;
+        }
+
+        int childIndex = getChildIndex(cur, value);
+        cur = cur->child[childIndex];
+    }
+
+    if (found == false)
+    {
+        addStep(steps, "Value does not exist", value);
+        return steps;
+    }
+
+    addStep(steps, "Value found", value);
+    addStep(steps, "Rebuild tree after delete", value);
+    addStep(steps, "Finish delete", value);
+
+    return steps;
 }

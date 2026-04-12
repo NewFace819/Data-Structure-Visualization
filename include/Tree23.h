@@ -55,4 +55,5 @@ public:
 
     std::vector<Tree23Node*> getSearchPath(int value, bool& found) const;
     std::vector<Tree23Step> getInsertSteps(int value) const;
+    std::vector<Tree23Step> getDeleteSteps(int value) const;
 };
