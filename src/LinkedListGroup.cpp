@@ -94,6 +94,7 @@ void LinkedListGroup::init()
     m_sidebar.setDeleteCallback([this](int val) { this->deleteNodeByValue(val); });
     m_sidebar.setSearchCallback([this](int val) { this->searchNode(val); });
     m_sidebar.setUpdateCallback([this](std::string val) { this->updateNode(val); });
+    m_sidebar.setRearrangeCallback([this]() { this->rearrangeList(); });
 
     initData("15,30,45");
 }
@@ -259,6 +260,15 @@ void LinkedListGroup::searchNode(int val)
     m_isPaused = false; m_sidebar.setPlayButtonText("Pause");
 }
 
+void LinkedListGroup::rearrangeList()
+{
+    ListNode* curr = m_head;
+    while (curr) {
+        curr->hasCustomPos = false; 
+        curr = curr->next;
+    }
+}
+
 void LinkedListGroup::updateNode(const std::string& input)
 {
     int oldVal = -1, newVal = -1;
@@ -305,11 +315,19 @@ void LinkedListGroup::clearList()
     }
     for (auto* n : m_dyingNodes) delete n;
     m_dyingNodes.clear();
+    m_draggedNode = nullptr;
 }
 
 void LinkedListGroup::loadState(int index)
 {
     if (index < 0 || index >= (int)m_history.size()) return;
+    
+    // Stop any ongoing drag to avoid glitches during state transition
+    if (m_draggedNode) {
+        m_draggedNode->isDragging = false;
+        m_draggedNode = nullptr;
+    }
+
     StepState& state = m_history[index];
     
     setCode(CODE_BLOCKS[state.codeBlockId]);
@@ -383,6 +401,40 @@ void LinkedListGroup::stepForward()
 void LinkedListGroup::handleInput(const sf::Event& event)
 {
     VisualizerState::handleInput(event);
+    
+    // Xử lý sự kiện kéo thả (Drag & Drop)
+    if (event.type == sf::Event::MouseButtonPressed && event.mouseButton.button == sf::Mouse::Left) {
+        sf::Vector2f mousePos(static_cast<float>(event.mouseButton.x), static_cast<float>(event.mouseButton.y));
+        ListNode* curr = m_head;
+        while (curr) {
+            // Kiểm tra xem chuột có click trúng node này không
+            if (curr->contains(mousePos)) {
+                curr->isDragging = true;
+                m_draggedNode = curr;
+                // Lưu lại khoảng cách từ chuột đến tâm Node để kéo không bị giật
+                m_dragOffset = curr->position - mousePos;
+                break;
+            }
+            curr = curr->next;
+        }
+    }
+    else if (event.type == sf::Event::MouseButtonReleased && event.mouseButton.button == sf::Mouse::Left) {
+        // Thả chuột ra, node sẽ lưu giữ vị trí custom này, không bị hút về hàng ngang nữa
+        if (m_draggedNode) {
+            m_draggedNode->isDragging = false;
+            m_draggedNode->hasCustomPos = true;
+            m_draggedNode->targetPos = m_draggedNode->position;
+            m_draggedNode = nullptr;
+        }
+    }
+    else if (event.type == sf::Event::MouseMoved) {
+        // Cập nhật vị trí node liên tục bám sát chuột khi đang kéo
+        if (m_draggedNode && m_draggedNode->isDragging) {
+            sf::Vector2f mousePos(static_cast<float>(event.mouseMove.x), static_cast<float>(event.mouseMove.y));
+            m_draggedNode->position = mousePos + m_dragOffset;
+            m_draggedNode->updatePosition(m_draggedNode->position);
+        }
+    }
 }
 
 void LinkedListGroup::update(float dt)
@@ -421,12 +473,21 @@ void LinkedListGroup::update(float dt)
         float targetX = startX + idx * gapX;
         float targetY = startY;
 
-        // Smooth lerp – clamp factor so nodes never overshoot their targets
-        float lerpFactor = std::min(1.0f, speedMult * dt);
-        curr->position.x += (targetX - curr->position.x) * lerpFactor;
-        curr->position.y += (targetY - curr->position.y) * lerpFactor;
+        // Nếu node này đã bị người dùng kéo thả thủ công, trỏ mục tiêu về vị trí custom
+        if (curr->hasCustomPos) {
+            targetX = curr->targetPos.x;
+            targetY = curr->targetPos.y;
+        }
 
-        curr->updatePosition(curr->position);
+        // Bỏ lực hút nội suy khi user đang kéo node (isDragging == true)
+        if (!curr->isDragging) {
+            // Smooth lerp – clamp factor so nodes never overshoot their targets
+            float lerpFactor = std::min(1.0f, speedMult * dt);
+            curr->position.x += (targetX - curr->position.x) * lerpFactor;
+            curr->position.y += (targetY - curr->position.y) * lerpFactor;
+
+            curr->updatePosition(curr->position);
+        }
 
         curr = curr->next;
         idx++;

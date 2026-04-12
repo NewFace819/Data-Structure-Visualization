@@ -1,6 +1,12 @@
 # Weekly Progress Report
-**Date:** 2026-03-29
-- Fixed UI hover state bug causing incorrect button clicks when the Input Box is active.
-- Redesigned Linked List nodes from circles to modern split rounded rectangles (70% value, 30% pointer).
-- Updated pointer visualization: arrows now originate from a distinct circle in the white pointer box and correctly point to the next node.
-- Ensured vibrant state colors (Orange/Green) perfectly map to the new 70-30 layout during searching and interacting.
+
+**Date: 2026-04-05**
+- **UI/UX Enhancements:**
+    - Implemented a modern **Notification Popup** system for "Not Found" and "Empty List" feedback.
+    - Enabled **Auto-playback** for all data structure operations, removing the need for manual play clicks.
+    - Synchronized notifications with algorithm execution (deferred display until traversal completes).
+- **Visualization Logic:**
+    - Added **Fade-out animations** for deleted nodes for smoother transitions.
+- **Technical Support:**
+    - Resolved Windows **Smart App Control** blocking issues.
+---

@@ -14,6 +14,10 @@ struct ListNode {
     sf::Text text;
     ListNode* next;
     float alpha = 255.0f; // Current opacity (255 = fully visible, 0 = invisible)
+    bool isDragging = false;
+    bool hasCustomPos = false; 
+    sf::Vector2f targetPos;
+
 
     ListNode(int val, sf::Vector2f pos, const sf::Font& font) 
         : value(val), position(pos), next(nullptr) 
@@ -78,6 +82,10 @@ struct ListNode {
         updatePosition(position);
     }
 
+    bool contains(sf::Vector2f pt) const {
+        return leftBg.getGlobalBounds().contains(pt) || rightBg.getGlobalBounds().contains(pt);
+    }
+
     void updatePosition(sf::Vector2f pos) {
         position = pos;
         float width = 70.0f;
@@ -125,6 +133,8 @@ private:
     };
     
     ListNode* m_head;
+    ListNode* m_draggedNode = nullptr;
+    sf::Vector2f m_dragOffset;
     std::vector<ListNode*> m_dyingNodes; // Nodes currently fading out (delete animation)
     std::vector<StepState> m_history;
     std::vector<int> m_logicalList;
@@ -135,6 +145,7 @@ private:
     void deleteNodeByValue(int val);
     void searchNode(int val);
     void updateNode(const std::string& input);
+    void rearrangeList();
     
     void prepNewOperation();
     void pushStep(int blockId, int highlightLine, int activeIdx, int foundIdx = -1, const std::string& msg = "");
