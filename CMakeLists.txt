@@ -18,6 +18,8 @@ set(SOURCES
     src/Sidebar.cpp
     src/TreeGroup.cpp
     src/VisualizerState.cpp
+    src/heap.cpp
+    src/heapgroup.cpp
 )
 add_executable(MySFMLApp main.cpp ${SOURCES})
 target_link_libraries(MySFMLApp sfml-graphics sfml-window sfml-system)

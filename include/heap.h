@@ -29,7 +29,7 @@ public:
 	void push(int value);
 	void pop();
 	void update(int index, int newValue);
-	void search(int value);
+	bool search(int value);
 	const std::vector<HeapStep>& getSteps() const {
 		return steps;
 	}

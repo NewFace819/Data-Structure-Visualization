@@ -1,12 +1,8 @@
 #include "heap.h"
 #include <algorithm>
 
-void VisualHeap::recordStep(int node1, int node2, int line) {
-	steps.push_back(HeapStep(heap, node1, node2, line));
-}
-
 void VisualHeap::init(const std::vector<int>& data) {
-	clear();
+	clearSteps();
 	for (int value : data) {
 		push(value);
 	}

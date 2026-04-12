@@ -221,7 +221,8 @@ void HeapGroup::drawTree(sf::RenderWindow& window, const HeapStep& currentStep)
 	const auto& heap = currentStep.currentHeap;
 	if (heap.empty()) return;
 
-	float startX = window.getSize().x + 250.0f / 2.0f;
+	// Đặt Heap ở giữa màn hình (tính từ khoảng rìa Sidebar 260px đến hết màn hình)
+	float startX = (window.getSize().x + 260.0f) / 2.0f;
 	float startY = 150.0f;
 	float VerticalSpacing = 80.0f;
 	float HorizontalSpacing = 200.0f;
