@@ -3,12 +3,12 @@
 #include <vector>
 
 #include "Button.h"
+#include "GraphSidebar.h"
 #include "VisualizerState.h"
 #include "graph/AStar.h"
 #include "graph/GraphModel.h"
 
-class GraphGroup : public VisualizerState
-{
+class GraphGroup : public VisualizerState {
 public:
     GraphGroup(App* app);
     ~GraphGroup() = default;
@@ -23,12 +23,7 @@ protected:
     void stepForward() override;
 
 private:
-    enum class ToolSelection {
-        Wall,
-        Start,
-        End,
-        Remove
-    };
+    enum class ToolSelection { Wall, Start, End, Remove };
 
     void setupToolbox();
     void refreshToolButtonStyles();
@@ -44,6 +39,7 @@ private:
     graph::GraphModel m_graphModel;
     sf::RectangleShape m_boardBackground;
     sf::RectangleShape m_cellShape;
+    GraphSidebar m_graphSidebar;
     sf::RectangleShape m_toolboxBackground;
     sf::Text m_toolboxTitle;
     std::vector<Button> m_toolButtons;
