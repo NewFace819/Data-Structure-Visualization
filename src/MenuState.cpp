@@ -4,6 +4,7 @@
 #include "TreeGroup.h"
 #include "GraphGroup.h"
 #include "HashTableGroup.h"
+#include "heapgroup.h"
 #include "App.h"
 #include <iostream>
 
@@ -56,9 +57,9 @@ void MenuState::init()
     float gapX = 40.0f;
     float gapY = 40.0f;
     
-    // Center the grid of 2 rows x 3 cols = but we only have 4 right now. Let's arrange as 2x2.
-    // Total width for 2 columns = 2 * 320 + 40 = 680
-    float startX = (1280.0f - (2 * cardW + gapX)) / 2.0f;
+    // We have 5 buttons now, let's arrange them in a 3-column layout.
+    // Total width for 3 columns: 3 * 320 + 2 * 40 = 1040
+    float startX = (1280.0f - 1040.0f) / 2.0f;
     float startY = 320.0f;
 
     auto setupCard = [&](Button& btn) {
@@ -68,28 +69,43 @@ void MenuState::init()
         btn.setOutline(2.0f, sf::Color(226, 232, 240)); // Slate 200 light border
     };
 
+    // Row 1, Col 1
     m_buttons.emplace_back(startX, startY, cardW, cardH, "Linked List", font);
     setupCard(m_buttons.back());
     m_buttons.back().setCallback([this]() {
         m_app->changeState(std::make_unique<LinkedListGroup>(m_app, "Linked List"));
     });
 
-    m_buttons.emplace_back(startX + cardW + gapX, startY, cardW, cardH, "Tree Configurations", font);
+    // Row 1, Col 2
+    m_buttons.emplace_back(startX + cardW + gapX, startY, cardW, cardH, "Tree Configs", font);
     setupCard(m_buttons.back());
     m_buttons.back().setCallback([this]() {
         m_app->changeState(std::make_unique<TreeGroup>(m_app));
     });
 
-    m_buttons.emplace_back(startX, startY + cardH + gapY, cardW, cardH, "Graph Algorithms", font);
+    // Row 1, Col 3
+    m_buttons.emplace_back(startX + 2 * (cardW + gapX), startY, cardW, cardH, "Graph Algos", font);
     setupCard(m_buttons.back());
     m_buttons.back().setCallback([this]() {
         m_app->changeState(std::make_unique<GraphGroup>(m_app));
     });
 
-    m_buttons.emplace_back(startX + cardW + gapX, startY + cardH + gapY, cardW, cardH, "Hash Table", font);
+    // Row 2
+    // Center the 2 items in Row 2 by offsetting startX
+    float row2StartX = startX + (cardW + gapX) / 2.0f;
+
+    // Row 2, Col 1
+    m_buttons.emplace_back(row2StartX, startY + cardH + gapY, cardW, cardH, "Hash Table", font);
     setupCard(m_buttons.back());
     m_buttons.back().setCallback([this]() {
         m_app->changeState(std::make_unique<HashTableGroup>(m_app));
+    });
+
+    // Row 2, Col 2
+    m_buttons.emplace_back(row2StartX + cardW + gapX, startY + cardH + gapY, cardW, cardH, "Heap", font);
+    setupCard(m_buttons.back());
+    m_buttons.back().setCallback([this]() {
+        m_app->changeState(std::make_unique<HeapGroup>(m_app));
     });
 }
 

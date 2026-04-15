@@ -94,6 +94,7 @@ void LinkedListGroup::init()
     m_sidebar.setDeleteCallback([this](int val) { this->deleteNodeByValue(val); });
     m_sidebar.setSearchCallback([this](int val) { this->searchNode(val); });
     m_sidebar.setUpdateCallback([this](std::string val) { this->updateNode(val); });
+    m_sidebar.setRearrangeCallback([this]() { this->rearrangeList(); });
 
     initData("15,30,45");
 }
@@ -106,9 +107,9 @@ void LinkedListGroup::prepNewOperation()
     }
 }
 
-void LinkedListGroup::pushStep(int blockId, int highlightLine, int activeIdx, int foundIdx)
+void LinkedListGroup::pushStep(int blockId, int highlightLine, int activeIdx, int foundIdx, const std::string& msg)
 {
-    m_history.push_back({m_logicalList, blockId, highlightLine, activeIdx, foundIdx});
+    m_history.push_back({m_logicalList, blockId, highlightLine, activeIdx, foundIdx, msg});
 }
 
 void LinkedListGroup::initData(const std::string& input)
@@ -116,6 +117,10 @@ void LinkedListGroup::initData(const std::string& input)
     m_history.clear();
     m_currentStep = 0;
     m_logicalList.clear();
+
+    // Immediately discard any leftover fade-out nodes from a previous operation
+    for (auto* n : m_dyingNodes) delete n;
+    m_dyingNodes.clear();
     
     std::vector<int> vals;
     if (input.empty()) {
@@ -148,9 +153,7 @@ void LinkedListGroup::initData(const std::string& input)
     int idx = 0;
     ListNode* curr = m_head;
     while(curr) {
-        curr->position = sf::Vector2f(startX + idx * gapX, startY);
-        curr->circle.setPosition(curr->position);
-        curr->text.setPosition(curr->position);
+        curr->updatePosition(sf::Vector2f(startX + idx * gapX, startY));
         curr = curr->next;
         idx++;
     }
@@ -187,29 +190,39 @@ void LinkedListGroup::deleteNodeByValue(int val)
 {
     prepNewOperation();
     pushStep(1, 0, -1); 
-    if (m_logicalList.empty()) { pushStep(1, 1, -1); stepForward(); m_isPaused = true; m_sidebar.setPlayButtonText("Play"); return; }
+    if (m_logicalList.empty()) { 
+        pushStep(1, 1, -1, -1, "List is empty!"); 
+        m_isPaused = false; m_sidebar.setPlayButtonText("Pause"); 
+        return; 
+    }
     
     pushStep(1, 2, 0); 
     if (m_logicalList[0] == val) {
         m_logicalList.erase(m_logicalList.begin());
         pushStep(1, 2, -1); 
-        stepForward(); m_isPaused = true; m_sidebar.setPlayButtonText("Play");
+        m_isPaused = false; m_sidebar.setPlayButtonText("Pause");
         return;
     }
     
-    pushStep(1, 3, 0); 
+    pushStep(1, 4, 0); 
     int currIdx = 0;
+    bool found = false;
     while (currIdx < (int)m_logicalList.size() - 1) {
         pushStep(1, 4, currIdx); 
-        if (m_logicalList[currIdx+1] == val) break;
+        if (m_logicalList[currIdx+1] == val) {
+            found = true;
+            break;
+        }
         currIdx++;
         pushStep(1, 5, currIdx); 
     }
     
-    pushStep(1, 6, currIdx); 
-    if (currIdx < (int)m_logicalList.size() - 1) {
+    if (found) {
+        pushStep(1, 6, currIdx);
         m_logicalList.erase(m_logicalList.begin() + currIdx + 1);
-        pushStep(1, 7, currIdx); 
+        pushStep(1, 7, currIdx);
+    } else {
+        pushStep(1, 4, -1, -1, "Value " + std::to_string(val) + " not found!");
     }
     m_isPaused = false; m_sidebar.setPlayButtonText("Pause");
 }
@@ -217,17 +230,24 @@ void LinkedListGroup::deleteNodeByValue(int val)
 void LinkedListGroup::searchNode(int val)
 {
     prepNewOperation();
-    pushStep(2, 0, -1); 
-    pushStep(2, 1, 0); 
-    pushStep(2, 2, 0); 
+    pushStep(2, 0, -1);
     
+    if (m_logicalList.empty()) {
+        pushStep(2, 1, -1); 
+        pushStep(2, 3, -1); 
+        pushStep(2, 8, -1, -1, "List is empty!"); 
+        m_isPaused = false; m_sidebar.setPlayButtonText("Pause"); return;
+    }
+    pushStep(2, 1, 0);
+    pushStep(2, 2, 0);
+
     int currIdx = 0;
     while (currIdx < (int)m_logicalList.size()) {
         pushStep(2, 3, currIdx); 
         pushStep(2, 4, currIdx); 
         if (m_logicalList[currIdx] == val) {
             pushStep(2, 4, currIdx, currIdx); 
-            stepForward(); m_isPaused = true; m_sidebar.setPlayButtonText("Play");
+            m_isPaused = false; m_sidebar.setPlayButtonText("Pause");
             return;
         }
         currIdx++;
@@ -236,8 +256,17 @@ void LinkedListGroup::searchNode(int val)
             pushStep(2, 6, currIdx); 
         }
     }
-    pushStep(2, 8, -1); 
+    pushStep(2, 8, -1, -1, "Value " + std::to_string(val) + " not found!"); 
     m_isPaused = false; m_sidebar.setPlayButtonText("Pause");
+}
+
+void LinkedListGroup::rearrangeList()
+{
+    ListNode* curr = m_head;
+    while (curr) {
+        curr->hasCustomPos = false; 
+        curr = curr->next;
+    }
 }
 
 void LinkedListGroup::updateNode(const std::string& input)
@@ -249,9 +278,15 @@ void LinkedListGroup::updateNode(const std::string& input)
     std::getline(ss, token, ','); try { newVal = std::stoi(token); } catch(...) {}
     
     prepNewOperation();
-    pushStep(3, 0, -1); 
-    pushStep(3, 1, 0); 
+    pushStep(3, 0, -1);
     
+    if (m_logicalList.empty()) {
+        pushStep(3, 1, -1); 
+        pushStep(3, 2, -1, -1, "List is empty!"); 
+        m_isPaused = false; m_sidebar.setPlayButtonText("Pause"); return;
+    }
+    pushStep(3, 1, 0);
+
     int currIdx = 0;
     while(currIdx < (int)m_logicalList.size()) {
         pushStep(3, 2, currIdx); 
@@ -260,13 +295,14 @@ void LinkedListGroup::updateNode(const std::string& input)
             m_logicalList[currIdx] = newVal;
             pushStep(3, 4, currIdx, currIdx); 
             pushStep(3, 5, currIdx, currIdx); 
-            stepForward(); m_isPaused = true; m_sidebar.setPlayButtonText("Play"); return;
+            m_isPaused = false; m_sidebar.setPlayButtonText("Pause"); return;
         }
         currIdx++;
         if (currIdx < (int)m_logicalList.size()) {
              pushStep(3, 7, currIdx); 
         }
     }
+    pushStep(3, 2, -1, -1, "Value " + std::to_string(oldVal) + " not found!");
     m_isPaused = false; m_sidebar.setPlayButtonText("Pause");
 }
 
@@ -277,15 +313,29 @@ void LinkedListGroup::clearList()
         m_head = m_head->next;
         delete temp;
     }
+    for (auto* n : m_dyingNodes) delete n;
+    m_dyingNodes.clear();
+    m_draggedNode = nullptr;
 }
 
 void LinkedListGroup::loadState(int index)
 {
     if (index < 0 || index >= (int)m_history.size()) return;
+    
+    // Stop any ongoing drag to avoid glitches during state transition
+    if (m_draggedNode) {
+        m_draggedNode->isDragging = false;
+        m_draggedNode = nullptr;
+    }
+
     StepState& state = m_history[index];
     
     setCode(CODE_BLOCKS[state.codeBlockId]);
     highlightCodeLine(state.codeHighlightLine);
+
+    if (!state.notificationMsg.empty()) {
+        showNotification(state.notificationMsg);
+    }
 
     std::vector<ListNode*> oldNodes;
     ListNode* curr = m_head;
@@ -299,7 +349,10 @@ void LinkedListGroup::loadState(int index)
         if (i < oldNodes.size()) {
             n = oldNodes[i];
             n->value = state.listValues[i];
-            n->text.setString(std::to_string(n->value)); 
+            n->text.setString(std::to_string(n->value));
+            sf::FloatRect bounds = n->text.getLocalBounds();
+            n->text.setOrigin(bounds.left + bounds.width  / 2.0f,
+                              bounds.top  + bounds.height / 2.0f);
         } else {
             // Spawn new node slightly off the end position
             float spawnX = 300.0f + oldNodes.size() * 100.0f;
@@ -308,11 +361,11 @@ void LinkedListGroup::loadState(int index)
         n->next = nullptr;
         
         if ((int)i == state.foundNodeIndex) {
-            n->circle.setFillColor(sf::Color(46, 204, 113)); // Emerald Green
+            n->leftBg.setFillColor(sf::Color(46, 204, 113)); // Emerald Green
         } else if ((int)i == state.activeNodeIndex) {
-            n->circle.setFillColor(sf::Color(230, 126, 34)); // Orange (Active)
+            n->leftBg.setFillColor(sf::Color(230, 126, 34)); // Orange (Active)
         } else {
-            n->circle.setFillColor(sf::Color(52, 152, 219)); // Normal Blue
+            n->leftBg.setFillColor(sf::Color(60, 60, 60)); // Dark Gray
         }
         
         if (!m_head) m_head = n;
@@ -321,7 +374,11 @@ void LinkedListGroup::loadState(int index)
     }
     
     for (size_t i = state.listValues.size(); i < oldNodes.size(); i++) {
-        delete oldNodes[i];
+        // Do NOT delete immediately - push to dying list so they can fade out
+        ListNode* dying = oldNodes[i];
+        dying->next  = nullptr;
+        dying->alpha = 255.0f;
+        m_dyingNodes.push_back(dying);
     }
 }
 
@@ -344,6 +401,40 @@ void LinkedListGroup::stepForward()
 void LinkedListGroup::handleInput(const sf::Event& event)
 {
     VisualizerState::handleInput(event);
+    
+    // Xử lý sự kiện kéo thả (Drag & Drop)
+    if (event.type == sf::Event::MouseButtonPressed && event.mouseButton.button == sf::Mouse::Left) {
+        sf::Vector2f mousePos(static_cast<float>(event.mouseButton.x), static_cast<float>(event.mouseButton.y));
+        ListNode* curr = m_head;
+        while (curr) {
+            // Kiểm tra xem chuột có click trúng node này không
+            if (curr->contains(mousePos)) {
+                curr->isDragging = true;
+                m_draggedNode = curr;
+                // Lưu lại khoảng cách từ chuột đến tâm Node để kéo không bị giật
+                m_dragOffset = curr->position - mousePos;
+                break;
+            }
+            curr = curr->next;
+        }
+    }
+    else if (event.type == sf::Event::MouseButtonReleased && event.mouseButton.button == sf::Mouse::Left) {
+        // Thả chuột ra, node sẽ lưu giữ vị trí custom này, không bị hút về hàng ngang nữa
+        if (m_draggedNode) {
+            m_draggedNode->isDragging = false;
+            m_draggedNode->hasCustomPos = true;
+            m_draggedNode->targetPos = m_draggedNode->position;
+            m_draggedNode = nullptr;
+        }
+    }
+    else if (event.type == sf::Event::MouseMoved) {
+        // Cập nhật vị trí node liên tục bám sát chuột khi đang kéo
+        if (m_draggedNode && m_draggedNode->isDragging) {
+            sf::Vector2f mousePos(static_cast<float>(event.mouseMove.x), static_cast<float>(event.mouseMove.y));
+            m_draggedNode->position = mousePos + m_dragOffset;
+            m_draggedNode->updatePosition(m_draggedNode->position);
+        }
+    }
 }
 
 void LinkedListGroup::update(float dt)
@@ -367,9 +458,9 @@ void LinkedListGroup::update(float dt)
         }
     }
     
-    float startX = 300.0f; // Vị trí node đầu tiên (DS Area)
-    float startY = 280.0f; // Căn gữa vùng DS
-    float gapX = 100.0f;   // Khoảng cách
+    float startX = 300.0f; // X position of the first node (DS area)
+    float startY = 280.0f; // Vertical centre of the DS area
+    float gapX = 100.0f;   // Horizontal spacing between nodes
 
     int idx = 0;
     ListNode* curr = m_head;
@@ -382,16 +473,40 @@ void LinkedListGroup::update(float dt)
         float targetX = startX + idx * gapX;
         float targetY = startY;
 
-        // Smooth lerp – clamp factor so nodes never overshoot their targets
-        float lerpFactor = std::min(1.0f, speedMult * dt);
-        curr->position.x += (targetX - curr->position.x) * lerpFactor;
-        curr->position.y += (targetY - curr->position.y) * lerpFactor;
+        // Nếu node này đã bị người dùng kéo thả thủ công, trỏ mục tiêu về vị trí custom
+        if (curr->hasCustomPos) {
+            targetX = curr->targetPos.x;
+            targetY = curr->targetPos.y;
+        }
 
-        curr->circle.setPosition(curr->position);
-        curr->text.setPosition(curr->position);
+        // Bỏ lực hút nội suy khi user đang kéo node (isDragging == true)
+        if (!curr->isDragging) {
+            // Smooth lerp – clamp factor so nodes never overshoot their targets
+            float lerpFactor = std::min(1.0f, speedMult * dt);
+            curr->position.x += (targetX - curr->position.x) * lerpFactor;
+            curr->position.y += (targetY - curr->position.y) * lerpFactor;
+
+            curr->updatePosition(curr->position);
+        }
 
         curr = curr->next;
         idx++;
+    }
+
+    // --- Fade-out animation for dying (deleted) nodes ---
+    // ~350 alpha units/sec  =>  node fully transparent in ~0.73 seconds
+    static const float FADE_SPEED = 350.0f;
+    for (auto* node : m_dyingNodes) {
+        node->alpha -= FADE_SPEED * dt;
+        uint8_t ua = static_cast<uint8_t>(std::max(0.0f, node->alpha));
+        node->setAlpha(ua);
+    }
+    // Remove nodes that have finished fading (iterate backwards to safely erase)
+    for (int i = static_cast<int>(m_dyingNodes.size()) - 1; i >= 0; i--) {
+        if (m_dyingNodes[i]->alpha <= 0.0f) {
+            delete m_dyingNodes[i];
+            m_dyingNodes.erase(m_dyingNodes.begin() + i);
+        }
     }
 }
 
@@ -420,33 +535,39 @@ void LinkedListGroup::draw(sf::RenderWindow& window)
 {
     VisualizerState::draw(window);
 
+    // Draw dying nodes first so they appear behind live nodes
+    for (auto* node : m_dyingNodes) {
+        window.draw(node->leftBg);
+        window.draw(node->rightBg);
+        window.draw(node->separator);
+        window.draw(node->pointerDot);
+        window.draw(node->text);
+    }
+
     ListNode* curr = m_head;
     while (curr != nullptr)
     {
-        if (curr->next != nullptr)
-        {
-            float radius = 20.0f;
-            sf::Vector2f start = curr->position;
-            sf::Vector2f end = curr->next->position;
-
-            sf::Vector2f dir = end - start;
-            float len = std::sqrt(dir.x * dir.x + dir.y * dir.y);
-            if (len > 0)
-            {
-                dir /= len;
-                start += dir * radius;
-                end -= dir * radius;
-                drawArrow(window, start, end);
-            }
-        }
+        window.draw(curr->leftBg);
+        window.draw(curr->rightBg);
+        window.draw(curr->separator);
+        window.draw(curr->pointerDot);
+        window.draw(curr->text);
         curr = curr->next;
     }
 
     curr = m_head;
     while (curr != nullptr)
     {
-        window.draw(curr->circle);
-        window.draw(curr->text);
+        if (curr->next != nullptr)
+        {
+            float width = 70.0f;
+            float divX = width * 0.7f;
+            
+            sf::Vector2f start = curr->position + sf::Vector2f(-width/2.0f + divX + (width - divX)/2.0f, 0);
+            sf::Vector2f end = curr->next->position - sf::Vector2f(width/2.0f, 0);
+
+            drawArrow(window, start, end);
+        }
         curr = curr->next;
     }
 }
