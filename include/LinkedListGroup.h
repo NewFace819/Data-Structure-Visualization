@@ -139,6 +139,8 @@ private:
     std::vector<StepState> m_history;
     std::vector<int> m_logicalList;
     int m_currentStep = 0;
+    
+    Button m_clearBtn;
 
     void initData(const std::string& input);
     void addNode(int val);

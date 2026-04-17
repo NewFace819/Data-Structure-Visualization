@@ -67,7 +67,7 @@ static const std::vector<std::vector<std::string>> CODE_BLOCKS = {
 };
 
 LinkedListGroup::LinkedListGroup(App* app, const std::string& dsName)
-    : VisualizerState(app, dsName), m_head(nullptr)
+    : VisualizerState(app, dsName), m_head(nullptr), m_clearBtn(1050.0f, 80.0f, 150.0f, 40.0f, "Clear List", app->getFont())
 {
     // Pre-initialize cached arrow shapes to avoid per-frame reconstruction
     m_arrowLine.setFillColor(sf::Color(100, 100, 100));
@@ -78,6 +78,9 @@ LinkedListGroup::LinkedListGroup(App* app, const std::string& dsName)
     m_arrowHead.setPoint(1, sf::Vector2f(-12.0f,  6.0f));
     m_arrowHead.setPoint(2, sf::Vector2f(-12.0f, -6.0f));
     m_arrowHead.setFillColor(sf::Color(100, 100, 100));
+
+    m_clearBtn.setColors(sf::Color(231, 76, 60), sf::Color(192, 57, 43), sf::Color(142, 68, 173));
+    m_clearBtn.setCallback([this]() { this->initData(""); });
 }
 
 LinkedListGroup::~LinkedListGroup()
@@ -399,6 +402,13 @@ void LinkedListGroup::stepForward()
 void LinkedListGroup::handleInput(const sf::Event& event)
 {
     VisualizerState::handleInput(event);
+    m_clearBtn.handleEvent(event, m_app->getWindow());
+    
+    if (event.type == sf::Event::KeyPressed) {
+        if (event.key.code == sf::Keyboard::Delete || event.key.code == sf::Keyboard::BackSpace) {
+            initData(""); // Fast reset hotkey
+        }
+    }
     
     if (event.type == sf::Event::MouseButtonPressed && event.mouseButton.button == sf::Mouse::Left) {
         sf::Vector2f mousePos(static_cast<float>(event.mouseButton.x), static_cast<float>(event.mouseButton.y));
@@ -433,6 +443,9 @@ void LinkedListGroup::handleInput(const sf::Event& event)
 void LinkedListGroup::update(float dt)
 {
     VisualizerState::update(dt);
+    
+    sf::Vector2i mousePos = sf::Mouse::getPosition(m_app->getWindow());
+    m_clearBtn.update(sf::Vector2f(static_cast<float>(mousePos.x), static_cast<float>(mousePos.y)));
     
     if (!m_isPaused) {
         m_playTimer += dt;
@@ -549,4 +562,6 @@ void LinkedListGroup::draw(sf::RenderWindow& window)
         
         curr = curr->next;
     }
+
+    m_clearBtn.draw(window);
 }
