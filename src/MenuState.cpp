@@ -107,6 +107,21 @@ void MenuState::init()
     m_buttons.back().setCallback([this]() {
         m_app->changeState(std::make_unique<HeapGroup>(m_app));
     });
+
+    if (m_llLogoTex.loadFromFile("assets/Linked_List_Logo.png")) {
+        m_llLogoTex.setSmooth(true);
+        m_llLogoSprite.setTexture(m_llLogoTex);
+        sf::Vector2u size = m_llLogoTex.getSize();
+        
+        float scaleY = 40.0f / size.y;
+        float scaleX = 120.0f / size.x;
+        float scale = std::min(scaleX, scaleY);
+        if (scale > 1.0f) scale = 1.0f;
+        
+        m_llLogoSprite.setScale(scale, scale);
+        m_llLogoSprite.setOrigin(static_cast<float>(size.x) / 2.0f, static_cast<float>(size.y) / 2.0f);
+        m_hasLogo = true;
+    }
 }
 
 void MenuState::handleInput(const sf::Event& event)
@@ -127,6 +142,52 @@ void MenuState::update(float dt)
     }
 }
 
+namespace {
+    void drawLinkedListLogo(sf::RenderWindow& window, sf::Vector2f center) {
+        sf::RectangleShape box(sf::Vector2f(24.0f, 16.0f));
+        box.setOrigin(12.0f, 8.0f);
+        box.setOutlineThickness(1.5f);
+        box.setOutlineColor(sf::Color(15, 23, 42)); 
+        box.setFillColor(sf::Color::White);
+
+        sf::RectangleShape ptrBg(sf::Vector2f(8.0f, 16.0f)); 
+        ptrBg.setOrigin(4.0f, 8.0f);
+        ptrBg.setFillColor(sf::Color(226, 232, 240));
+
+        sf::CircleShape dot(1.5f);
+        dot.setFillColor(sf::Color(15, 23, 42));
+        dot.setOrigin(1.5f, 1.5f);
+
+        auto drawNode = [&](float cx, float cy) {
+            box.setPosition(cx, cy);  window.draw(box);
+            ptrBg.setPosition(cx + 8.0f, cy); window.draw(ptrBg);
+            dot.setPosition(cx + 8.0f, cy);   window.draw(dot);
+        };
+
+        drawNode(center.x - 45.0f, center.y);
+        drawNode(center.x, center.y);
+        drawNode(center.x + 45.0f, center.y);
+
+        auto drawArr = [&](float cx) {
+            sf::RectangleShape arrLine(sf::Vector2f(21.0f, 1.5f));
+            arrLine.setPosition(cx + 8.0f, center.y - 0.75f);
+            arrLine.setFillColor(sf::Color(15, 23, 42));
+            window.draw(arrLine);
+
+            sf::ConvexShape ah;
+            ah.setPointCount(3);
+            ah.setPoint(0, sf::Vector2f(0.0f, -3.0f));
+            ah.setPoint(1, sf::Vector2f(4.0f, 0.0f));
+            ah.setPoint(2, sf::Vector2f(0.0f, 3.0f));
+            ah.setFillColor(sf::Color(15, 23, 42));
+            ah.setPosition(cx + 29.0f, center.y);
+            window.draw(ah);
+        };
+        drawArr(center.x - 45.0f);
+        drawArr(center.x);
+    }
+}
+
 void MenuState::draw(sf::RenderWindow& window)
 {
     window.draw(m_topBar);
@@ -139,5 +200,15 @@ void MenuState::draw(sf::RenderWindow& window)
     for (const auto& btn : m_buttons)
     {
         btn.draw(window);
+    }
+    
+    // Draw the Linked List icon over the first button
+    float startX = (1280.0f - 1040.0f) / 2.0f;
+    float startY = 320.0f;
+    if (m_hasLogo) {
+        m_llLogoSprite.setPosition(startX + 160.0f, startY + 40.0f);
+        window.draw(m_llLogoSprite);
+    } else {
+        drawLinkedListLogo(window, sf::Vector2f(startX + 160.0f, startY + 40.0f));
     }
 }
