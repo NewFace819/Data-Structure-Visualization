@@ -114,8 +114,8 @@ void MenuState::init()
         m_llLogoSprite.setTexture(m_llLogoTex);
         sf::Vector2u size = m_llLogoTex.getSize();
         
-        float scaleY = 110.0f / size.y; // Full card height minus margins
-        float scaleX = 280.0f / size.x; // Full card width minus margins
+        float scaleY = 280.0f / size.y; // Full card height minus margins
+        float scaleX = 512.0f / size.x; // Full card width minus margins
         float scale = std::min(scaleX, scaleY);
         
         m_llLogoSprite.setScale(scale, scale);
