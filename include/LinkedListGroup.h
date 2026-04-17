@@ -159,5 +159,5 @@ private:
     
     // Shape cache
     mutable sf::RectangleShape m_arrowLine;
-    mutable sf::ConvexShape   m_arrowHead;
+    mutable sf::ConvexShape    m_arrowHead;
 };

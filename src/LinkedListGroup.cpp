@@ -521,22 +521,6 @@ void LinkedListGroup::draw(sf::RenderWindow& window)
 {
     VisualizerState::draw(window);
 
-    ListNode* currArrow = m_head;
-    while (currArrow != nullptr)
-    {
-        if (currArrow->next != nullptr)
-        {
-            float width = 70.0f;
-            float divX = width * 0.7f;
-            
-            sf::Vector2f start = currArrow->position + sf::Vector2f(-width/2.0f + divX + (width - divX)/2.0f, 0);
-            sf::Vector2f end = currArrow->next->position - sf::Vector2f(width/2.0f, 0);
-
-            drawArrow(window, start, end);
-        }
-        currArrow = currArrow->next;
-    }
-
     for (auto* node : m_dyingNodes) {
         window.draw(node->leftBg);
         window.draw(node->rightBg);
@@ -553,6 +537,16 @@ void LinkedListGroup::draw(sf::RenderWindow& window)
         window.draw(curr->separator);
         window.draw(curr->pointerDot);
         window.draw(curr->text);
+
+        if (curr->next != nullptr)
+        {
+            float width = 70.0f;
+            float divX = width * 0.7f;
+            sf::Vector2f start = curr->position + sf::Vector2f(-width/2.0f + divX + (width - divX)/2.0f, 0);
+            sf::Vector2f end = curr->next->position - sf::Vector2f(width/2.0f, 0);
+            drawArrow(window, start, end);
+        }
+        
         curr = curr->next;
     }
 }
