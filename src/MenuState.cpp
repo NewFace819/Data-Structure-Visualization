@@ -7,6 +7,7 @@
 #include "heapgroup.h"
 #include "App.h"
 #include <iostream>
+#include <algorithm>
 
 MenuState::MenuState(App* app) : m_app(app)
 {
@@ -113,14 +114,18 @@ void MenuState::init()
         m_llLogoSprite.setTexture(m_llLogoTex);
         sf::Vector2u size = m_llLogoTex.getSize();
         
-        float scaleY = 40.0f / size.y;
-        float scaleX = 120.0f / size.x;
+        float scaleY = 110.0f / size.y; // Full card height minus margins
+        float scaleX = 280.0f / size.x; // Full card width minus margins
         float scale = std::min(scaleX, scaleY);
-        if (scale > 1.0f) scale = 1.0f;
         
         m_llLogoSprite.setScale(scale, scale);
         m_llLogoSprite.setOrigin(static_cast<float>(size.x) / 2.0f, static_cast<float>(size.y) / 2.0f);
         m_hasLogo = true;
+
+        // Hide regular text because the logo already has text in it
+        if (!m_buttons.empty()) {
+            m_buttons[0].setText(""); 
+        }
     }
 }
 
@@ -206,9 +211,10 @@ void MenuState::draw(sf::RenderWindow& window)
     float startX = (1280.0f - 1040.0f) / 2.0f;
     float startY = 320.0f;
     if (m_hasLogo) {
-        m_llLogoSprite.setPosition(startX + 160.0f, startY + 40.0f);
+        // Centered perfectly inside the empty card since text is removed
+        m_llLogoSprite.setPosition(startX + 160.0f, startY + 60.0f);
         window.draw(m_llLogoSprite);
     } else {
-        drawLinkedListLogo(window, sf::Vector2f(startX + 160.0f, startY + 40.0f));
+        drawLinkedListLogo(window, sf::Vector2f(startX + 160.0f, startY + 26.0f));
     }
 }
