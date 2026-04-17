@@ -322,7 +322,6 @@ void LinkedListGroup::loadState(int index)
 {
     if (index < 0 || index >= (int)m_history.size()) return;
     
-    // Stop any ongoing drag to avoid glitches during state transition
     if (m_draggedNode) {
         m_draggedNode->isDragging = false;
         m_draggedNode = nullptr;
@@ -374,7 +373,6 @@ void LinkedListGroup::loadState(int index)
     }
     
     for (size_t i = state.listValues.size(); i < oldNodes.size(); i++) {
-        // Do NOT delete immediately - push to dying list so they can fade out
         ListNode* dying = oldNodes[i];
         dying->next  = nullptr;
         dying->alpha = 255.0f;
@@ -402,16 +400,13 @@ void LinkedListGroup::handleInput(const sf::Event& event)
 {
     VisualizerState::handleInput(event);
     
-    // Xử lý sự kiện kéo thả (Drag & Drop)
     if (event.type == sf::Event::MouseButtonPressed && event.mouseButton.button == sf::Mouse::Left) {
         sf::Vector2f mousePos(static_cast<float>(event.mouseButton.x), static_cast<float>(event.mouseButton.y));
         ListNode* curr = m_head;
         while (curr) {
-            // Kiểm tra xem chuột có click trúng node này không
             if (curr->contains(mousePos)) {
                 curr->isDragging = true;
                 m_draggedNode = curr;
-                // Lưu lại khoảng cách từ chuột đến tâm Node để kéo không bị giật
                 m_dragOffset = curr->position - mousePos;
                 break;
             }
@@ -419,7 +414,6 @@ void LinkedListGroup::handleInput(const sf::Event& event)
         }
     }
     else if (event.type == sf::Event::MouseButtonReleased && event.mouseButton.button == sf::Mouse::Left) {
-        // Thả chuột ra, node sẽ lưu giữ vị trí custom này, không bị hút về hàng ngang nữa
         if (m_draggedNode) {
             m_draggedNode->isDragging = false;
             m_draggedNode->hasCustomPos = true;
@@ -428,7 +422,6 @@ void LinkedListGroup::handleInput(const sf::Event& event)
         }
     }
     else if (event.type == sf::Event::MouseMoved) {
-        // Cập nhật vị trí node liên tục bám sát chuột khi đang kéo
         if (m_draggedNode && m_draggedNode->isDragging) {
             sf::Vector2f mousePos(static_cast<float>(event.mouseMove.x), static_cast<float>(event.mouseMove.y));
             m_draggedNode->position = mousePos + m_dragOffset;
@@ -473,15 +466,12 @@ void LinkedListGroup::update(float dt)
         float targetX = startX + idx * gapX;
         float targetY = startY;
 
-        // Nếu node này đã bị người dùng kéo thả thủ công, trỏ mục tiêu về vị trí custom
         if (curr->hasCustomPos) {
             targetX = curr->targetPos.x;
             targetY = curr->targetPos.y;
         }
 
-        // Bỏ lực hút nội suy khi user đang kéo node (isDragging == true)
         if (!curr->isDragging) {
-            // Smooth lerp – clamp factor so nodes never overshoot their targets
             float lerpFactor = std::min(1.0f, speedMult * dt);
             curr->position.x += (targetX - curr->position.x) * lerpFactor;
             curr->position.y += (targetY - curr->position.y) * lerpFactor;
@@ -501,7 +491,6 @@ void LinkedListGroup::update(float dt)
         uint8_t ua = static_cast<uint8_t>(std::max(0.0f, node->alpha));
         node->setAlpha(ua);
     }
-    // Remove nodes that have finished fading (iterate backwards to safely erase)
     for (int i = static_cast<int>(m_dyingNodes.size()) - 1; i >= 0; i--) {
         if (m_dyingNodes[i]->alpha <= 0.0f) {
             delete m_dyingNodes[i];
@@ -519,13 +508,11 @@ void LinkedListGroup::drawArrow(sf::RenderWindow& window, sf::Vector2f start, sf
 
     float angle = std::atan2(dir.y, dir.x) * 180.0f / 3.14159265f;
 
-    // Reuse cached line shape
     m_arrowLine.setSize(sf::Vector2f(len, 3.0f));
     m_arrowLine.setPosition(start);
     m_arrowLine.setRotation(angle);
     window.draw(m_arrowLine);
 
-    // Reuse cached arrowhead shape
     m_arrowHead.setPosition(end);
     m_arrowHead.setRotation(angle);
     window.draw(m_arrowHead);
@@ -535,7 +522,22 @@ void LinkedListGroup::draw(sf::RenderWindow& window)
 {
     VisualizerState::draw(window);
 
-    // Draw dying nodes first so they appear behind live nodes
+    ListNode* currArrow = m_head;
+    while (currArrow != nullptr)
+    {
+        if (currArrow->next != nullptr)
+        {
+            float width = 70.0f;
+            float divX = width * 0.7f;
+            
+            sf::Vector2f start = currArrow->position + sf::Vector2f(-width/2.0f + divX + (width - divX)/2.0f, 0);
+            sf::Vector2f end = currArrow->next->position - sf::Vector2f(width/2.0f, 0);
+
+            drawArrow(window, start, end);
+        }
+        currArrow = currArrow->next;
+    }
+
     for (auto* node : m_dyingNodes) {
         window.draw(node->leftBg);
         window.draw(node->rightBg);
@@ -552,22 +554,6 @@ void LinkedListGroup::draw(sf::RenderWindow& window)
         window.draw(curr->separator);
         window.draw(curr->pointerDot);
         window.draw(curr->text);
-        curr = curr->next;
-    }
-
-    curr = m_head;
-    while (curr != nullptr)
-    {
-        if (curr->next != nullptr)
-        {
-            float width = 70.0f;
-            float divX = width * 0.7f;
-            
-            sf::Vector2f start = curr->position + sf::Vector2f(-width/2.0f + divX + (width - divX)/2.0f, 0);
-            sf::Vector2f end = curr->next->position - sf::Vector2f(width/2.0f, 0);
-
-            drawArrow(window, start, end);
-        }
         curr = curr->next;
     }
 }
