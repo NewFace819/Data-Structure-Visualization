@@ -52,15 +52,15 @@ void MenuState::init()
     m_subtitleText.setOrigin(subRect.left + subRect.width / 2.0f, subRect.top + subRect.height / 2.0f);
     m_subtitleText.setPosition(1280 / 2.0f, 230.0f);
 
-    // Create selection buttons as grid of Cards
-    float cardW = 320.0f;
-    float cardH = 120.0f;
+    // Create selection buttons as grid of squarish Cards
+    float cardW = 260.0f;
+    float cardH = 160.0f;
     float gapX = 40.0f;
     float gapY = 40.0f;
     
     // We have 5 buttons now, let's arrange them in a 3-column layout.
-    // Total width for 3 columns: 3 * 320 + 2 * 40 = 1040
-    float startX = (1280.0f - 1040.0f) / 2.0f;
+    float totalWidth = 3 * cardW + 2 * gapX;
+    float startX = (1280.0f - totalWidth) / 2.0f;
     float startY = 320.0f;
 
     auto setupCard = [&](Button& btn) {
@@ -114,8 +114,8 @@ void MenuState::init()
         m_llLogoSprite.setTexture(m_llLogoTex);
         sf::Vector2u size = m_llLogoTex.getSize();
         
-        float scaleY = 280.0f / size.y; // Full card height minus margins
-        float scaleX = 512.0f / size.x; // Full card width minus margins
+        float scaleY = 240.0f / size.y; // Target squarish card height minus margins
+        float scaleX = 420.0f / size.x; // Target squarish card width minus margins
         float scale = std::min(scaleX, scaleY);
         
         m_llLogoSprite.setScale(scale, scale);
@@ -207,14 +207,16 @@ void MenuState::draw(sf::RenderWindow& window)
         btn.draw(window);
     }
     
-    // Draw the Linked List icon over the first button
-    float startX = (1280.0f - 1040.0f) / 2.0f;
+    // Draw the Linked List icon over the first squarish button
+    float cardW = 260.0f;
+    float cardH = 160.0f;
+    float startX = (1280.0f - (3 * cardW + 2 * 40.0f)) / 2.0f;
     float startY = 320.0f;
     if (m_hasLogo) {
-        // Centered perfectly inside the empty card since text is removed
-        m_llLogoSprite.setPosition(startX + 160.0f, startY + 60.0f);
+        // Centered perfectly inside the empty squarish card
+        m_llLogoSprite.setPosition(startX + cardW / 2.0f, startY + cardH / 2.0f);
         window.draw(m_llLogoSprite);
     } else {
-        drawLinkedListLogo(window, sf::Vector2f(startX + 160.0f, startY + 26.0f));
+        drawLinkedListLogo(window, sf::Vector2f(startX + cardW / 2.0f, startY + 50.0f));
     }
 }
