@@ -445,7 +445,8 @@ void LinkedListGroup::update(float dt)
     VisualizerState::update(dt);
     
     sf::Vector2i mousePos = sf::Mouse::getPosition(m_app->getWindow());
-    m_clearBtn.update(sf::Vector2f(static_cast<float>(mousePos.x), static_cast<float>(mousePos.y)));
+    sf::Vector2f mPosF(static_cast<float>(mousePos.x), static_cast<float>(mousePos.y));
+    m_clearBtn.update(mPosF);
     
     if (!m_isPaused) {
         m_playTimer += dt;
@@ -490,6 +491,19 @@ void LinkedListGroup::update(float dt)
             curr->position.y += (targetY - curr->position.y) * lerpFactor;
 
             curr->updatePosition(curr->position);
+        }
+
+        // Graphic Polish: Hover Neon Outline
+        if (curr->contains(mPosF) || curr->isDragging) {
+            curr->leftBg.setOutlineColor(sf::Color(0, 255, 255)); // Cyan Neon
+            curr->rightBg.setOutlineColor(sf::Color(0, 255, 255));
+            curr->leftBg.setOutlineThickness(3.0f);
+            curr->rightBg.setOutlineThickness(3.0f);
+        } else {
+            curr->leftBg.setOutlineColor(sf::Color(100, 100, 100)); // Default gray
+            curr->rightBg.setOutlineColor(sf::Color(100, 100, 100));
+            curr->leftBg.setOutlineThickness(2.0f);
+            curr->rightBg.setOutlineThickness(2.0f);
         }
 
         curr = curr->next;
