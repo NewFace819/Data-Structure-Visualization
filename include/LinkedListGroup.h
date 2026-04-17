@@ -13,7 +13,7 @@ struct ListNode {
     sf::CircleShape pointerDot;
     sf::Text text;
     ListNode* next;
-    float alpha = 255.0f; // Current opacity (255 = fully visible, 0 = invisible)
+    float alpha = 255.0f; // Opacity
     bool isDragging = false;
     bool hasCustomPos = false; 
     sf::Vector2f targetPos;
@@ -29,38 +29,38 @@ struct ListNode {
         float divX = width * 0.7f;
         int pointsPerCorner = 8;
         
-        // Left Background (70%): rounded left corners, square right corners
+        // Left Bg (70%)
         leftBg.setPointCount(pointsPerCorner * 2 + 2);
-        for (int i = 0; i < pointsPerCorner; ++i) { // Top-left
+        for (int i = 0; i < pointsPerCorner; ++i) { // TL
             float angle = 3.141592654f + i * (3.141592654f / 2.0f) / (pointsPerCorner - 1);
             leftBg.setPoint(i, sf::Vector2f(radius + radius * std::cos(angle), radius + radius * std::sin(angle)));
         }
-        leftBg.setPoint(pointsPerCorner, sf::Vector2f(divX, 0.0f)); // Top-right (square)
-        leftBg.setPoint(pointsPerCorner + 1, sf::Vector2f(divX, height)); // Bottom-right (square)
-        for (int i = 0; i < pointsPerCorner; ++i) { // Bottom-left
+        leftBg.setPoint(pointsPerCorner, sf::Vector2f(divX, 0.0f)); // TR(sq)
+        leftBg.setPoint(pointsPerCorner + 1, sf::Vector2f(divX, height)); // BR(sq)
+        for (int i = 0; i < pointsPerCorner; ++i) { // BL
             float angle = 3.141592654f / 2.0f + i * (3.141592654f / 2.0f) / (pointsPerCorner - 1);
             leftBg.setPoint(pointsPerCorner + 2 + i, sf::Vector2f(radius + radius * std::cos(angle), height - radius + radius * std::sin(angle)));
         }
         leftBg.setOrigin(width / 2.0f, height / 2.0f);
-        leftBg.setFillColor(sf::Color(60, 60, 60)); // Left section - dark gray
+        leftBg.setFillColor(sf::Color(60, 60, 60)); // Dim
         leftBg.setOutlineThickness(2.0f);
         leftBg.setOutlineColor(sf::Color(100, 100, 100));
 
-        // Right Background (30%): square left corners, rounded right corners
+        // Right Bg (30%)
         rightBg.setPointCount(pointsPerCorner * 2 + 2);
-        rightBg.setPoint(0, sf::Vector2f(divX, 0.0f)); // Top-left (square)
-        for (int i = 0; i < pointsPerCorner; ++i) { // Top-right
+        rightBg.setPoint(0, sf::Vector2f(divX, 0.0f)); // TL(sq)
+        for (int i = 0; i < pointsPerCorner; ++i) { // TR
             float angle = 3.141592654f * 1.5f + i * (3.141592654f / 2.0f) / (pointsPerCorner - 1);
             rightBg.setPoint(1 + i, sf::Vector2f(width - radius + radius * std::cos(angle), radius + radius * std::sin(angle)));
         }
-        for (int i = 0; i < pointsPerCorner; ++i) { // Bottom-right
+        for (int i = 0; i < pointsPerCorner; ++i) { // BR
             float angle = i * (3.141592654f / 2.0f) / (pointsPerCorner - 1);
             rightBg.setPoint(1 + pointsPerCorner + i, sf::Vector2f(width - radius + radius * std::cos(angle), height - radius + radius * std::sin(angle)));
         }
-        rightBg.setPoint(1 + pointsPerCorner * 2, sf::Vector2f(divX, height)); // Bottom-left (square)
+        rightBg.setPoint(1 + pointsPerCorner * 2, sf::Vector2f(divX, height)); // BL(sq)
         
         rightBg.setOrigin(width / 2.0f, height / 2.0f);
-        rightBg.setFillColor(sf::Color::White); // Right section - white (pointer area)
+        rightBg.setFillColor(sf::Color::White); // Bright
         rightBg.setOutlineThickness(2.0f);
         rightBg.setOutlineColor(sf::Color(100, 100, 100));
 
@@ -98,7 +98,7 @@ struct ListNode {
         text.setPosition(position.x - width/2.0f + divX/2.0f, position.y);
     }
 
-    // Apply uniform alpha to every drawable component of this node
+    // Set alpha
     void setAlpha(uint8_t ua) {
         sf::Color c;
         c = leftBg.getFillColor();    c.a = ua; leftBg.setFillColor(c);
@@ -135,7 +135,7 @@ private:
     ListNode* m_head;
     ListNode* m_draggedNode = nullptr;
     sf::Vector2f m_dragOffset;
-    std::vector<ListNode*> m_dyingNodes; // Nodes currently fading out (delete animation)
+    std::vector<ListNode*> m_dyingNodes; // Fading
     std::vector<StepState> m_history;
     std::vector<int> m_logicalList;
     int m_currentStep = 0;
@@ -157,7 +157,7 @@ private:
     
     void drawArrow(sf::RenderWindow& window, sf::Vector2f start, sf::Vector2f end) const;
     
-    // Cached shapes for drawArrow to avoid per-frame heap allocation
+    // Shape cache
     mutable sf::RectangleShape m_arrowLine;
     mutable sf::ConvexShape   m_arrowHead;
 };

@@ -118,7 +118,7 @@ void LinkedListGroup::initData(const std::string& input)
     m_currentStep = 0;
     m_logicalList.clear();
 
-    // Immediately discard any leftover fade-out nodes from a previous operation
+    // Discard dying nodes
     for (auto* n : m_dyingNodes) delete n;
     m_dyingNodes.clear();
     
@@ -142,11 +142,11 @@ void LinkedListGroup::initData(const std::string& input)
     m_logicalList = vals;
     pushStep(4, 4, -1);
     
-    // Load it immediately without animating
+    // Instantly load
     m_currentStep = 0;
     loadState(m_currentStep);
 
-    // Force positions to target immediately so they don't fly in
+    // Force target pos
     float startX = 300.0f;
     float startY = 280.0f;
     float gapX = 100.0f;
@@ -353,18 +353,18 @@ void LinkedListGroup::loadState(int index)
             n->text.setOrigin(bounds.left + bounds.width  / 2.0f,
                               bounds.top  + bounds.height / 2.0f);
         } else {
-            // Spawn new node slightly off the end position
+            // Spawn offset
             float spawnX = 300.0f + oldNodes.size() * 100.0f;
             n = new ListNode(state.listValues[i], sf::Vector2f(spawnX, 100.0f), m_app->getFont());
         }
         n->next = nullptr;
         
         if ((int)i == state.foundNodeIndex) {
-            n->leftBg.setFillColor(sf::Color(46, 204, 113)); // Emerald Green
+            n->leftBg.setFillColor(sf::Color(46, 204, 113)); // Match
         } else if ((int)i == state.activeNodeIndex) {
-            n->leftBg.setFillColor(sf::Color(230, 126, 34)); // Orange (Active)
+            n->leftBg.setFillColor(sf::Color(230, 126, 34)); // Active
         } else {
-            n->leftBg.setFillColor(sf::Color(60, 60, 60)); // Dark Gray
+            n->leftBg.setFillColor(sf::Color(60, 60, 60)); // Default
         }
         
         if (!m_head) m_head = n;
@@ -451,9 +451,9 @@ void LinkedListGroup::update(float dt)
         }
     }
     
-    float startX = 300.0f; // X position of the first node (DS area)
-    float startY = 280.0f; // Vertical centre of the DS area
-    float gapX = 100.0f;   // Horizontal spacing between nodes
+    float startX = 300.0f; // Base X
+    float startY = 280.0f; // Base Y
+    float gapX = 100.0f;   // Gap X
 
     int idx = 0;
     ListNode* curr = m_head;
@@ -483,8 +483,7 @@ void LinkedListGroup::update(float dt)
         idx++;
     }
 
-    // --- Fade-out animation for dying (deleted) nodes ---
-    // ~350 alpha units/sec  =>  node fully transparent in ~0.73 seconds
+    // Fade anim
     static const float FADE_SPEED = 350.0f;
     for (auto* node : m_dyingNodes) {
         node->alpha -= FADE_SPEED * dt;
