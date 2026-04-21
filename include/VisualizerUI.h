@@ -29,6 +29,9 @@ struct VisualizerUI
     ToolbarButton initSampleButton;
     ToolbarButton playButton;
     ToolbarButton pauseButton;
+    ToolbarButton slowButton;
+    ToolbarButton normalButton;
+    ToolbarButton fastButton;
 
     sf::Text titleText;
     sf::Text statusText;

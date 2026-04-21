@@ -7,6 +7,9 @@
 #include <ctime>
 #include<sstream>
 
+void updateAnimationText(VisualizerUI& ui, const std:: string& text, const std::string& speedLabel);
+
+
 bool tryInsertFromInput(Tree23& tree, VisualizerUI& ui,
                         std::vector<Tree23Node*>& highlightPath, bool& searchFound,
                         std::vector<Tree23Node*>& fullSearchPath,
@@ -56,26 +59,28 @@ void resetInsertAnimation(std::vector<Tree23Step>& insertSteps,
                           int& currentInsertStep,
                           bool& isInsertPlaying,
                           int& pendingInsertValue,
-                          VisualizerUI& ui)
+                          VisualizerUI& ui,
+                          const std::string& speedLabel)
 {
     insertSteps.clear();
     currentInsertStep = -1;
     isInsertPlaying = false;
     pendingInsertValue = 0;
-    ui.animationText.setString("Animation: idle");
+    updateAnimationText(ui, "Animation: idle", speedLabel);
 }
 
 void resetDeleteAnimation(std::vector<Tree23Step>& deleteSteps,
                           int& currentDeleteStep,
                           bool& isDeletePlaying,
                           int& pendingDeleteValue,
-                          VisualizerUI& ui)
+                          VisualizerUI& ui,
+                          const std::string& speedLabel)
 {
     deleteSteps.clear();
     currentDeleteStep = -1;
     isDeletePlaying = false;
     pendingDeleteValue = 0;
-    ui.animationText.setString("Animation: idle");
+    updateAnimationText(ui, "Animation: idle", speedLabel);
 }
 
 void initializeRandomTree(Tree23& tree)
@@ -147,6 +152,10 @@ bool parseUpdateInput(const std:: string& s, int& oldValue, int& newValue)
     return true;
 }
 
+void updateAnimationText(VisualizerUI& ui, const std::string& text, const std::string& speedLabel)
+{
+    ui.animationText.setString(text + " | Speed: " + speedLabel);
+}
 
 int main()
 {
@@ -163,6 +172,7 @@ int main()
 
     VisualizerUI ui;
     setupUI(ui, font, window.getSize());
+    ui.animationText.setString("Animation: idle | Speed: Normal");
 
     Tree23 tree;
 
@@ -183,6 +193,7 @@ int main()
 
     sf::Clock animationClock;
     float animationDelay = 0.8f;
+    std::string speedLabel = "Normal";
 
     while (window.isOpen())
     {
@@ -230,10 +241,10 @@ int main()
 
                             if (!insertSteps.empty())
                             {
-                                ui.animationText.setString("Animation: " + insertSteps[0].action);
+                                updateAnimationText(ui, "Animation: " + insertSteps[0].action, speedLabel);
                             }
                             else {
-                                ui.animationText.setString("Animation: idle");
+                                updateAnimationText(ui, "Animation: idle", speedLabel);
                             }
 
                             animationClock.restart();
@@ -266,7 +277,7 @@ int main()
 
                                 isPlaying = false;
                                 currentAnimationStep = -1;
-                                ui.animationText.setString("Animation: idle");
+                                updateAnimationText(ui, "Animation: idle", speedLabel);
                             }
                             else {
                                 currentAnimationStep = 0;
@@ -275,12 +286,12 @@ int main()
                                 if ((int)fullSearchPath.size() > 1)
                                 {
                                     isPlaying = true;
-                                    ui.animationText.setString("Animation: playing");
+                                    updateAnimationText(ui, "Animation: playing", speedLabel);
                                     animationClock.restart();
                                 }
                                 else {
                                     isPlaying = false;
-                                    ui.animationText.setString("Animation: finished");
+                                    updateAnimationText(ui, "Animation: finished", speedLabel);
 
                                     if (searchFound)
                                     {
@@ -315,10 +326,10 @@ int main()
 
                             if (!deleteSteps.empty())
                             {
-                                ui.animationText.setString("Animation: " + deleteSteps[0].action);
+                                updateAnimationText(ui, "Animation: " + deleteSteps[0].action, speedLabel);
                             }
                             else {
-                                ui.animationText.setString("Animation: idle");
+                                updateAnimationText(ui, "Animation: idle", speedLabel);
                             }
 
                             animationClock.restart();
@@ -349,10 +360,10 @@ int main()
                                 searchFound = false;
 
                                 resetInsertAnimation(insertSteps, currentInsertStep,
-                                                     isInsertPlaying, pendingInsertValue, ui);
+                                                     isInsertPlaying, pendingInsertValue, ui, speedLabel);
 
-                                resetDeleteAnimation(insertSteps, currentDeleteStep,
-                                                     isDeletePlaying, pendingDeleteValue, ui);
+                                resetDeleteAnimation(deleteSteps, currentDeleteStep,
+                                                     isDeletePlaying, pendingDeleteValue, ui, speedLabel);
                             }
                             else {
                                 setStatus(ui, "Update failed");
@@ -370,9 +381,9 @@ int main()
                                        currentAnimationStep, isPlaying,
                                        searchFound, ui);
                         resetInsertAnimation(insertSteps, currentInsertStep, 
-                                             isInsertPlaying, pendingInsertValue, ui);
+                                             isInsertPlaying, pendingInsertValue, ui, speedLabel);
                         resetDeleteAnimation(deleteSteps, currentDeleteStep,
-                                             isDeletePlaying, pendingDeleteValue, ui);
+                                             isDeletePlaying, pendingDeleteValue, ui, speedLabel);
                     }
 
                     if (isButtonClicked(ui.initRandomButton, mousePos))
@@ -390,10 +401,10 @@ int main()
                         searchFound = false;
 
                         resetInsertAnimation(insertSteps, currentInsertStep,
-                                             isInsertPlaying, pendingInsertValue, ui);
+                                             isInsertPlaying, pendingInsertValue, ui, speedLabel);
 
                         resetDeleteAnimation(deleteSteps, currentDeleteStep,
-                                             isDeletePlaying, pendingDeleteValue, ui);
+                                             isDeletePlaying, pendingDeleteValue, ui, speedLabel);
                     }
 
                     if (isButtonClicked(ui.initSampleButton, mousePos))
@@ -411,10 +422,10 @@ int main()
                         searchFound = false;
 
                         resetInsertAnimation(insertSteps, currentInsertStep,
-                                             isInsertPlaying, pendingInsertValue, ui);
+                                             isInsertPlaying, pendingInsertValue, ui, speedLabel);
 
-                        resetDeleteAnimation(insertSteps, currentDeleteStep,
-                                             isDeletePlaying, pendingDeleteValue, ui);
+                        resetDeleteAnimation(deleteSteps, currentDeleteStep,
+                                             isDeletePlaying, pendingDeleteValue, ui, speedLabel);
                     }
 
                     if (isButtonClicked(ui.playButton, mousePos))
@@ -422,19 +433,19 @@ int main()
                         if (!insertSteps.empty() && currentInsertStep >= 0 && currentInsertStep + 1 < (int)insertSteps.size())
                         {
                             isInsertPlaying = true;
-                            ui.animationText.setString("Animation: playing insert");
+                            updateAnimationText(ui, "Animation: playing insert", speedLabel);
                             animationClock.restart();
                         }
                         else if (!deleteSteps.empty() && currentDeleteStep >= 0 && currentDeleteStep + 1 < (int)deleteSteps.size())
                         {
                             isDeletePlaying = true;
-                            ui.animationText.setString("Animation: playing delete");
+                            updateAnimationText(ui, "Animation: playing delete", speedLabel);
                             animationClock.restart();
                         }
                         else if (!fullSearchPath.empty() && currentAnimationStep + 1 < (int)fullSearchPath.size())
                         {
                             isPlaying = true;
-                            ui.animationText.setString("Animation: playing");
+                            updateAnimationText(ui, "Animation: playing", speedLabel);
                             animationClock.restart();
                         }
                     }
@@ -444,7 +455,31 @@ int main()
                         isPlaying = false;
                         isInsertPlaying = false;
                         isDeletePlaying = false;
-                        ui.animationText.setString("Animation: paused");
+                        updateAnimationText(ui, "Animation: paused", speedLabel);
+                    }
+
+                    if (isButtonClicked(ui.slowButton, mousePos))
+                    {
+                        animationDelay = 1.2f;
+                        speedLabel = "Slow";
+                        updateAnimationText(ui, "Animation: idle", speedLabel);
+                        setStatus(ui, "Speed set to slow");
+                    }
+
+                    if (isButtonClicked(ui.normalButton, mousePos))
+                    {
+                        animationDelay = 0.8f;
+                        speedLabel = "Normal";
+                        updateAnimationText(ui, "Animation: idle", speedLabel);
+                        setStatus(ui, "Speed set to normal");
+                    }
+
+                    if (isButtonClicked(ui.fastButton, mousePos))
+                    {
+                        animationDelay = 0.35f;
+                        speedLabel = "Fast";
+                        updateAnimationText(ui, "Animation: idle", speedLabel);
+                        setStatus(ui, "Speed set to fast");
                     }
                 }
             }
@@ -478,10 +513,10 @@ int main()
 
                         if (!insertSteps.empty())
                         {
-                            ui.animationText.setString("Animation: " + insertSteps[0].action);
+                            updateAnimationText(ui, "Animation: " + insertSteps[0].action, speedLabel);
                         }
                         else {
-                            ui.animationText.setString("Animation: idle");
+                            updateAnimationText(ui, "Animation: idle", speedLabel);
                         }
 
                         animationClock.restart();
@@ -500,7 +535,7 @@ int main()
                 if (currentInsertStep + 1 < (int)insertSteps.size())
                 {
                     currentInsertStep++;
-                    ui.animationText.setString("Animation: " + insertSteps[currentInsertStep].action);
+                    updateAnimationText(ui, "Animation: " + insertSteps[currentInsertStep].action, speedLabel);
                 }
                 else {
                     tree.insert(pendingInsertValue);
@@ -513,7 +548,7 @@ int main()
                     currentInsertStep = -1;
                     isInsertPlaying = false;
                     pendingInsertValue = 0;
-                    ui.animationText.setString("Animation: finished insert");
+                    updateAnimationText(ui, "Animation: finished insert", speedLabel);
 
                     deleteSteps.clear();
                     currentDeleteStep = -1;
@@ -532,7 +567,7 @@ int main()
                 if (currentDeleteStep + 1 < (int)deleteSteps.size())
                 {
                     currentDeleteStep++;
-                    ui.animationText.setString("Animation: " + deleteSteps[currentDeleteStep].action);
+                    updateAnimationText(ui, "Animation: " + deleteSteps[currentDeleteStep].action, speedLabel);
                 }
                 else {
                     tree.remove(pendingDeleteValue);
@@ -545,7 +580,7 @@ int main()
                     currentDeleteStep = -1;
                     isDeletePlaying = false;
                     pendingDeleteValue = 0;
-                    ui.animationText.setString("Animation: finished delete");
+                    updateAnimationText(ui, "Animation: finished delete", speedLabel);
 
                     highlightPath.clear();
                     fullSearchPath.clear();
@@ -574,7 +609,7 @@ int main()
                 }
                 else {
                     isPlaying = false;
-                    ui.animationText.setString("Animation: finished");
+                    updateAnimationText(ui, "Animation: finished", speedLabel);
 
                     if (searchFound)
                     {
