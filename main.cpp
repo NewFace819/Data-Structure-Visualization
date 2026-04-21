@@ -5,6 +5,7 @@
 #include "VisualizerUI.h"
 #include <cstdlib>
 #include <ctime>
+#include<sstream>
 
 bool tryInsertFromInput(Tree23& tree, VisualizerUI& ui,
                         std::vector<Tree23Node*>& highlightPath, bool& searchFound,
@@ -119,6 +120,33 @@ void initializeSampleTree(Tree23& tree)
         tree.insert(values[i]);
     }
 }
+
+bool parseUpdateInput(const std:: string& s, int& oldValue, int& newValue)
+{
+    std::stringstream ss(s);
+    char comma = 0;
+
+    ss >> oldValue;
+    if (ss.fail())
+    {
+        return false;
+    }
+
+    ss >> comma;
+    if (ss.fail() || comma != ',')
+    {
+        return false;
+    }
+
+    ss >> newValue;
+    if (ss.fail())
+    {
+        return false;
+    }
+
+    return true;
+}
+
 
 int main()
 {
@@ -295,6 +323,40 @@ int main()
 
                             animationClock.restart();
                             setStatus(ui, "Delete animation started");
+                        }
+                    }
+
+                    if (isButtonClicked(ui.updateButton, mousePos))
+                    {
+                        int oldValue = 0;
+                        int newValue = 0;
+
+                        if (parseUpdateInput(ui.inputBuffer, oldValue, newValue) == false)
+                        {
+                            setStatus(ui, "Invalid update format");
+                        }
+                        else {
+                            if (tree.update(oldValue, newValue))
+                            {
+                                setStatus(ui, "Update successful");
+                                ui.inputBuffer = "";
+                                ui.inputText.setString("");
+
+                                highlightPath.clear();
+                                fullSearchPath.clear();
+                                currentAnimationStep = -1;
+                                isPlaying = false;
+                                searchFound = false;
+
+                                resetInsertAnimation(insertSteps, currentInsertStep,
+                                                     isInsertPlaying, pendingInsertValue, ui);
+
+                                resetDeleteAnimation(insertSteps, currentDeleteStep,
+                                                     isDeletePlaying, pendingDeleteValue, ui);
+                            }
+                            else {
+                                setStatus(ui, "Update failed");
+                            }
                         }
                     }
 

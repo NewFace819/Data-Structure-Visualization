@@ -23,6 +23,7 @@ struct VisualizerUI
     ToolbarButton insertButton;
     ToolbarButton searchButton;
     ToolbarButton deleteButton;
+    ToolbarButton updateButton;
     ToolbarButton resetButton;
     ToolbarButton initRandomButton;
     ToolbarButton initSampleButton;
