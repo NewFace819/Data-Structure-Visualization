@@ -67,41 +67,49 @@ void setupUI(VisualizerUI& ui, const sf::Font& font, sf::Vector2u windowSize)
     ui.inputText.setFillColor(sf::Color::Black);
     ui.inputText.setPosition(sf::Vector2f(margin + 10.f, 132.f));
 
-    setupButton(ui.insertButton, font, "Insert",
-                sf::Vector2f(leftWidth - 2 * margin, 50.f),
-                sf::Vector2f(margin, 190.f));
+setupButton(ui.insertButton, font, "Insert",
+            sf::Vector2f(leftWidth - 2 * margin, 50.f),
+            sf::Vector2f(margin, 190.f));
 
-    setupButton(ui.searchButton, font, "Search",
-                sf::Vector2f(leftWidth - 2 * margin, 50.f),
-                sf::Vector2f(margin, 255.f));
+setupButton(ui.searchButton, font, "Search",
+            sf::Vector2f(leftWidth - 2 * margin, 50.f),
+            sf::Vector2f(margin, 255.f));
 
-    setupButton(ui.deleteButton, font, "Delete",
-                sf::Vector2f(leftWidth - 2 * margin, 50.f),
-                sf::Vector2f(margin, 320.f));
+setupButton(ui.deleteButton, font, "Delete",
+            sf::Vector2f(leftWidth - 2 * margin, 50.f),
+            sf::Vector2f(margin, 320.f));
 
-    setupButton(ui.resetButton, font, "Reset",
-                sf::Vector2f(leftWidth - 2 * margin, 50.f),
-                sf::Vector2f(margin, 385.f));
+setupButton(ui.resetButton, font, "Reset",
+            sf::Vector2f(leftWidth - 2 * margin, 50.f),
+            sf::Vector2f(margin, 385.f));
 
-    setupButton(ui.playButton, font, "Play",
-                sf::Vector2f((leftWidth - 3 * margin) / 2.f, 45.f),
-                sf::Vector2f(margin, 455.f));
+setupButton(ui.initRandomButton, font, "Init Random",
+            sf::Vector2f(leftWidth - 2 * margin, 50.f),
+            sf::Vector2f(margin, 450.f));
 
-    setupButton(ui.pauseButton, font, "Pause",
-                sf::Vector2f((leftWidth - 3 * margin) / 2.f, 45.f),
-                sf::Vector2f(margin + (leftWidth - 3 * margin) / 2.f + margin, 455.f));
+setupButton(ui.initSampleButton, font, "Init Sample",
+            sf::Vector2f(leftWidth - 2 * margin, 50.f),
+            sf::Vector2f(margin, 515.f));
+
+setupButton(ui.playButton, font, "Play",
+            sf::Vector2f((leftWidth - 3 * margin) / 2.f, 45.f),
+            sf::Vector2f(margin, 585.f));
+
+setupButton(ui.pauseButton, font, "Pause",
+            sf::Vector2f((leftWidth - 3 * margin) / 2.f, 45.f),
+            sf::Vector2f(margin + (leftWidth - 3 * margin) / 2.f + margin, 585.f));
 
     ui.statusText.setFont(font);
     ui.statusText.setCharacterSize(18);
     ui.statusText.setFillColor(sf::Color(220, 220, 220));
     ui.statusText.setString("Ready");
-    ui.statusText.setPosition(sf::Vector2f(margin, 525.f));
+    ui.statusText.setPosition(sf::Vector2f(margin, 655.f));
 
     ui.animationText.setFont(font);
     ui.animationText.setCharacterSize(18);
     ui.animationText.setFillColor(sf::Color(220, 220, 220));
     ui.animationText.setString("Animation: idle");
-    ui.animationText.setPosition(sf::Vector2f(margin, 560.f));
+    ui.animationText.setPosition(sf::Vector2f(margin, 690.f));
 
     ui.treePlaceholderText.setFont(font);
     ui.treePlaceholderText.setCharacterSize(28);
@@ -137,6 +145,12 @@ void drawUI(sf::RenderWindow& window, VisualizerUI& ui)
 
     window.draw(ui.resetButton.box);
     window.draw(ui.resetButton.label);
+
+    window.draw(ui.initRandomButton.box);
+    window.draw(ui.initRandomButton.label);
+
+    window.draw(ui.initSampleButton.box);
+    window.draw(ui.initSampleButton.label);
 
     window.draw(ui.playButton.box);
     window.draw(ui.playButton.label);

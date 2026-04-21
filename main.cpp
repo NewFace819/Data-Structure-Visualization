@@ -3,6 +3,8 @@
 #include <string>
 #include "Tree23.h"
 #include "VisualizerUI.h"
+#include <cstdlib>
+#include <ctime>
 
 bool tryInsertFromInput(Tree23& tree, VisualizerUI& ui,
                         std::vector<Tree23Node*>& highlightPath, bool& searchFound,
@@ -75,8 +77,53 @@ void resetDeleteAnimation(std::vector<Tree23Step>& deleteSteps,
     ui.animationText.setString("Animation: idle");
 }
 
+void initializeRandomTree(Tree23& tree)
+{
+    tree.clear();
+
+    int count = 6;
+    int values[6];
+
+    for (int i = 0; i < count; i++)
+    {
+        int x = rand() % 50 + 1;
+
+        bool duplicate = true;
+        while (duplicate)
+        {
+            duplicate = false;
+            for (int j = 0; j < i; j++)
+            {
+                if (values[j] == x)
+                {
+                    duplicate = true;
+                    x = rand() % 50 + 1;
+                    break;
+                }
+            }
+        }
+
+        values[i] = x;
+        tree.insert(x);
+    }
+}
+
+void initializeSampleTree(Tree23& tree)
+{
+    tree.clear();
+
+    int values[6] = {2, 3, 4, 5, 7, 10};
+
+    for (int i = 0; i < 6; i++)
+    {
+        tree.insert(values[i]);
+    }
+}
+
 int main()
 {
+    srand((unsigned int)time(nullptr));
+
     sf::RenderWindow window(sf::VideoMode(1400, 800), "2-3 Tree Visualizer");
     window.setFramerateLimit(60);
 
@@ -263,6 +310,48 @@ int main()
                         resetInsertAnimation(insertSteps, currentInsertStep, 
                                              isInsertPlaying, pendingInsertValue, ui);
                         resetDeleteAnimation(deleteSteps, currentDeleteStep,
+                                             isDeletePlaying, pendingDeleteValue, ui);
+                    }
+
+                    if (isButtonClicked(ui.initRandomButton, mousePos))
+                    {
+                        initializeRandomTree(tree);
+
+                        ui.inputBuffer = "";
+                        ui.inputText.setString("");
+                        setStatus(ui, "Random tree initialized");
+
+                        highlightPath.clear();
+                        fullSearchPath.clear();
+                        currentAnimationStep = -1;
+                        isPlaying = false;
+                        searchFound = false;
+
+                        resetInsertAnimation(insertSteps, currentInsertStep,
+                                             isInsertPlaying, pendingInsertValue, ui);
+
+                        resetDeleteAnimation(deleteSteps, currentDeleteStep,
+                                             isDeletePlaying, pendingDeleteValue, ui);
+                    }
+
+                    if (isButtonClicked(ui.initSampleButton, mousePos))
+                    {
+                        initializeSampleTree(tree);
+
+                        ui.inputBuffer = "";
+                        ui.inputText.setString("");
+                        setStatus(ui, "Sample tree initialized");
+
+                        highlightPath.clear();
+                        fullSearchPath.clear();
+                        currentAnimationStep = -1;
+                        isPlaying = false;
+                        searchFound = false;
+
+                        resetInsertAnimation(insertSteps, currentInsertStep,
+                                             isInsertPlaying, pendingInsertValue, ui);
+
+                        resetDeleteAnimation(insertSteps, currentDeleteStep,
                                              isDeletePlaying, pendingDeleteValue, ui);
                     }
 

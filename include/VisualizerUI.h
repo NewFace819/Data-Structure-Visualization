@@ -24,6 +24,8 @@ struct VisualizerUI
     ToolbarButton searchButton;
     ToolbarButton deleteButton;
     ToolbarButton resetButton;
+    ToolbarButton initRandomButton;
+    ToolbarButton initSampleButton;
     ToolbarButton playButton;
     ToolbarButton pauseButton;
 
