@@ -23,6 +23,8 @@ set(SOURCES
     src/Tree23Node.cpp
     src/Tree23Step.cpp
     src/VisualizerUI.cpp
+    src/heap.cpp
+    src/heapgroup.cpp
 )
 
 add_executable(MySFMLApp main.cpp ${SOURCES})

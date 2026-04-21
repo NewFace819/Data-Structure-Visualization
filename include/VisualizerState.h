@@ -17,6 +17,7 @@ public:
     void handleInput(const sf::Event& event) override;
     void update(float dt) override;
     void draw(sf::RenderWindow& window) override;
+    void showNotification(const std::string& message);
 
 protected:
     App* m_app;
@@ -28,6 +29,11 @@ protected:
     Button m_backButton;
     bool m_isPaused = true;
     float m_playTimer = 0.0f;
+
+    sf::RectangleShape m_notifyBg;
+    sf::Text m_notifyText;
+    float m_notifyTimer = 0.0f;
+    float m_notifyAlpha = 0.0f;
 
     virtual void stepBack() {}
     virtual void stepForward() {}

@@ -19,6 +19,7 @@ public:
     void setDeleteCallback(std::function<void(int)> cb);
     void setSearchCallback(std::function<void(int)> cb);
     void setUpdateCallback(std::function<void(std::string)> cb);
+    void setRearrangeCallback(std::function<void()> cb);
 
     void setBackCallback(std::function<void()> cb);
     void setPlayPauseCallback(std::function<void()> cb);
@@ -46,4 +47,5 @@ private:
     InputBox m_inputBox;
     std::function<void(std::string)> m_initCb, m_updateCb;
     std::function<void(int)> m_addCb, m_delCb, m_searchCb;
+    std::function<void()> m_rearrangeCb;
 };

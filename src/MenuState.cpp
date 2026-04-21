@@ -4,8 +4,10 @@
 #include "TreeGroup.h"
 #include "GraphGroup.h"
 #include "HashTableGroup.h"
+#include "heapgroup.h"
 #include "App.h"
 #include <iostream>
+#include <algorithm>
 
 MenuState::MenuState(App* app) : m_app(app)
 {
@@ -50,15 +52,15 @@ void MenuState::init()
     m_subtitleText.setOrigin(subRect.left + subRect.width / 2.0f, subRect.top + subRect.height / 2.0f);
     m_subtitleText.setPosition(1280 / 2.0f, 230.0f);
 
-    // Create selection buttons as grid of Cards
-    float cardW = 320.0f;
-    float cardH = 120.0f;
+    // Create selection buttons as grid of squarish Cards
+    float cardW = 260.0f;
+    float cardH = 160.0f;
     float gapX = 40.0f;
     float gapY = 40.0f;
     
-    // Center the grid of 2 rows x 3 cols = but we only have 4 right now. Let's arrange as 2x2.
-    // Total width for 2 columns = 2 * 320 + 40 = 680
-    float startX = (1280.0f - (2 * cardW + gapX)) / 2.0f;
+    // We have 5 buttons now, let's arrange them in a 3-column layout.
+    float totalWidth = 3 * cardW + 2 * gapX;
+    float startX = (1280.0f - totalWidth) / 2.0f;
     float startY = 320.0f;
 
     auto setupCard = [&](Button& btn) {
@@ -68,29 +70,63 @@ void MenuState::init()
         btn.setOutline(2.0f, sf::Color(226, 232, 240)); // Slate 200 light border
     };
 
+    // Row 1, Col 1
     m_buttons.emplace_back(startX, startY, cardW, cardH, "Linked List", font);
     setupCard(m_buttons.back());
     m_buttons.back().setCallback([this]() {
         m_app->changeState(std::make_unique<LinkedListGroup>(m_app, "Linked List"));
     });
 
-    m_buttons.emplace_back(startX + cardW + gapX, startY, cardW, cardH, "Tree Configurations", font);
+    // Row 1, Col 2
+    m_buttons.emplace_back(startX + cardW + gapX, startY, cardW, cardH, "Tree Configs", font);
     setupCard(m_buttons.back());
     m_buttons.back().setCallback([this]() {
         m_app->changeState(std::make_unique<TreeGroup>(m_app));
     });
 
-    m_buttons.emplace_back(startX, startY + cardH + gapY, cardW, cardH, "Graph Algorithms", font);
+    // Row 1, Col 3
+    m_buttons.emplace_back(startX + 2 * (cardW + gapX), startY, cardW, cardH, "Graph Algos", font);
     setupCard(m_buttons.back());
     m_buttons.back().setCallback([this]() {
         m_app->changeState(std::make_unique<GraphGroup>(m_app));
     });
 
-    m_buttons.emplace_back(startX + cardW + gapX, startY + cardH + gapY, cardW, cardH, "Hash Table", font);
+    // Row 2
+    // Center the 2 items in Row 2 by offsetting startX
+    float row2StartX = startX + (cardW + gapX) / 2.0f;
+
+    // Row 2, Col 1
+    m_buttons.emplace_back(row2StartX, startY + cardH + gapY, cardW, cardH, "Hash Table", font);
     setupCard(m_buttons.back());
     m_buttons.back().setCallback([this]() {
         m_app->changeState(std::make_unique<HashTableGroup>(m_app));
     });
+
+    // Row 2, Col 2
+    m_buttons.emplace_back(row2StartX + cardW + gapX, startY + cardH + gapY, cardW, cardH, "Heap", font);
+    setupCard(m_buttons.back());
+    m_buttons.back().setCallback([this]() {
+        m_app->changeState(std::make_unique<HeapGroup>(m_app));
+    });
+
+    if (m_llLogoTex.loadFromFile("assets/Linked_List_Logo.png")) {
+        m_llLogoTex.setSmooth(true);
+        m_llLogoSprite.setTexture(m_llLogoTex);
+        sf::Vector2u size = m_llLogoTex.getSize();
+        
+        float scaleY = 240.0f / size.y; // Target squarish card height minus margins
+        float scaleX = 420.0f / size.x; // Target squarish card width minus margins
+        float scale = std::min(scaleX, scaleY);
+        
+        m_llLogoSprite.setScale(scale, scale);
+        m_llLogoSprite.setOrigin(static_cast<float>(size.x) / 2.0f, static_cast<float>(size.y) / 2.0f);
+        m_hasLogo = true;
+
+        // Hide regular text because the logo already has text in it
+        if (!m_buttons.empty()) {
+            m_buttons[0].setText(""); 
+        }
+    }
 }
 
 void MenuState::handleInput(const sf::Event& event)
@@ -111,6 +147,52 @@ void MenuState::update(float dt)
     }
 }
 
+namespace {
+    void drawLinkedListLogo(sf::RenderWindow& window, sf::Vector2f center) {
+        sf::RectangleShape box(sf::Vector2f(24.0f, 16.0f));
+        box.setOrigin(12.0f, 8.0f);
+        box.setOutlineThickness(1.5f);
+        box.setOutlineColor(sf::Color(15, 23, 42)); 
+        box.setFillColor(sf::Color::White);
+
+        sf::RectangleShape ptrBg(sf::Vector2f(8.0f, 16.0f)); 
+        ptrBg.setOrigin(4.0f, 8.0f);
+        ptrBg.setFillColor(sf::Color(226, 232, 240));
+
+        sf::CircleShape dot(1.5f);
+        dot.setFillColor(sf::Color(15, 23, 42));
+        dot.setOrigin(1.5f, 1.5f);
+
+        auto drawNode = [&](float cx, float cy) {
+            box.setPosition(cx, cy);  window.draw(box);
+            ptrBg.setPosition(cx + 8.0f, cy); window.draw(ptrBg);
+            dot.setPosition(cx + 8.0f, cy);   window.draw(dot);
+        };
+
+        drawNode(center.x - 45.0f, center.y);
+        drawNode(center.x, center.y);
+        drawNode(center.x + 45.0f, center.y);
+
+        auto drawArr = [&](float cx) {
+            sf::RectangleShape arrLine(sf::Vector2f(21.0f, 1.5f));
+            arrLine.setPosition(cx + 8.0f, center.y - 0.75f);
+            arrLine.setFillColor(sf::Color(15, 23, 42));
+            window.draw(arrLine);
+
+            sf::ConvexShape ah;
+            ah.setPointCount(3);
+            ah.setPoint(0, sf::Vector2f(0.0f, -3.0f));
+            ah.setPoint(1, sf::Vector2f(4.0f, 0.0f));
+            ah.setPoint(2, sf::Vector2f(0.0f, 3.0f));
+            ah.setFillColor(sf::Color(15, 23, 42));
+            ah.setPosition(cx + 29.0f, center.y);
+            window.draw(ah);
+        };
+        drawArr(center.x - 45.0f);
+        drawArr(center.x);
+    }
+}
+
 void MenuState::draw(sf::RenderWindow& window)
 {
     window.draw(m_topBar);
@@ -123,5 +205,18 @@ void MenuState::draw(sf::RenderWindow& window)
     for (const auto& btn : m_buttons)
     {
         btn.draw(window);
+    }
+    
+    // Draw the Linked List icon over the first squarish button
+    float cardW = 260.0f;
+    float cardH = 160.0f;
+    float startX = (1280.0f - (3 * cardW + 2 * 40.0f)) / 2.0f;
+    float startY = 320.0f;
+    if (m_hasLogo) {
+        // Centered perfectly inside the empty squarish card
+        m_llLogoSprite.setPosition(startX + cardW / 2.0f, startY + cardH / 2.0f);
+        window.draw(m_llLogoSprite);
+    } else {
+        drawLinkedListLogo(window, sf::Vector2f(startX + cardW / 2.0f, startY + 50.0f));
     }
 }

@@ -33,6 +33,7 @@ Sidebar::Sidebar(const sf::Font& font, float windowHeight)
     m_buttons.emplace_back(btnX, startY + 2*(btnH + gap), btnW, btnH, "Delete", m_font);
     m_buttons.emplace_back(btnX, startY + 3*(btnH + gap), btnW, btnH, "Search", m_font);
     m_buttons.emplace_back(btnX, startY + 4*(btnH + gap), btnW, btnH, "Update", m_font);
+    m_buttons.emplace_back(btnX, startY + 5*(btnH + gap), btnW, btnH, "Rearrange", m_font);
 
     // Setup input box popups - pop out to the RIGHT of the sidebar
     float popupX = panelWidth + 20.0f;
@@ -56,9 +57,14 @@ Sidebar::Sidebar(const sf::Font& font, float windowHeight)
         m_inputBox.setPosition(popupX, startY + 4*(btnH + gap));
         m_inputBox.show("oldVal,newVal:", [this](std::string val) { if (m_updateCb) m_updateCb(val); }, false);
     });
+    
+    // Nút Rearrange không có popup
+    m_buttons[5].setCallback([this]() {
+        if (m_rearrangeCb) m_rearrangeCb();
+    });
 
     // Speed Slider (Below buttons)
-    float sliderY = startY + 5*(btnH + gap) + 40.0f;
+    float sliderY = startY + 6*(btnH + gap) + 40.0f;
     
     m_speedText.setFont(m_font);
     m_speedText.setString("Speed");
@@ -128,11 +134,6 @@ void Sidebar::update(const sf::RenderWindow& window)
 
 void Sidebar::update(sf::Vector2f mousePos)
 {
-    if (m_inputBox.isVisible()) {
-        // Do not update buttons hover if input box is taking precedence
-        return; 
-    }
-
     for (auto& btn : m_buttons)
     {
         btn.update(mousePos);
@@ -162,12 +163,13 @@ void Sidebar::setAddCallback(std::function<void(int)> cb) { m_addCb = cb; }
 void Sidebar::setDeleteCallback(std::function<void(int)> cb) { m_delCb = cb; }
 void Sidebar::setSearchCallback(std::function<void(int)> cb) { m_searchCb = cb; }
 void Sidebar::setUpdateCallback(std::function<void(std::string)> cb) { m_updateCb = cb; }
+void Sidebar::setRearrangeCallback(std::function<void()> cb) { m_rearrangeCb = cb; }
 
-void Sidebar::setBackCallback(std::function<void()> cb) { if(m_buttons.size() > 5) m_buttons[5].setCallback(cb); }
-void Sidebar::setPlayPauseCallback(std::function<void()> cb) { if(m_buttons.size() > 6) m_buttons[6].setCallback(cb); }
-void Sidebar::setNextCallback(std::function<void()> cb) { if(m_buttons.size() > 7) m_buttons[7].setCallback(cb); }
+void Sidebar::setBackCallback(std::function<void()> cb) { if(m_buttons.size() > 6) m_buttons[6].setCallback(cb); }
+void Sidebar::setPlayPauseCallback(std::function<void()> cb) { if(m_buttons.size() > 7) m_buttons[7].setCallback(cb); }
+void Sidebar::setNextCallback(std::function<void()> cb) { if(m_buttons.size() > 8) m_buttons[8].setCallback(cb); }
 
-void Sidebar::setPlayButtonText(const std::string& text) { if(m_buttons.size() > 6) m_buttons[6].setText(text); }
+void Sidebar::setPlayButtonText(const std::string& text) { if(m_buttons.size() > 7) m_buttons[7].setText(text); }
 
 void Sidebar::updateSliderPosition(float mouseX)
 {
