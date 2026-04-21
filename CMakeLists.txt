@@ -6,6 +6,7 @@ set(SFML_DIR "${CMAKE_CURRENT_SOURCE_DIR}/SFML-2.6.2/lib/cmake/SFML")
 find_package(SFML 2.6 COMPONENTS graphics window system audio network REQUIRED)
 
 include_directories(include)
+
 set(SOURCES
     src/App.cpp
     src/Button.cpp
@@ -18,10 +19,16 @@ set(SOURCES
     src/Sidebar.cpp
     src/TreeGroup.cpp
     src/VisualizerState.cpp
+    src/Tree23.cpp
+    src/Tree23Node.cpp
+    src/Tree23Step.cpp
+    src/VisualizerUI.cpp
     src/heap.cpp
     src/heapgroup.cpp
 )
+
 add_executable(MySFMLApp main.cpp ${SOURCES})
+
 target_link_libraries(MySFMLApp sfml-graphics sfml-window sfml-system)
 
 if(WIN32)
