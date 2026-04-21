@@ -157,6 +157,13 @@ void updateAnimationText(VisualizerUI& ui, const std::string& text, const std::s
     ui.animationText.setString(text + " | Speed: " + speedLabel);
 }
 
+void resetInsertPathState(Tree23Node*& currentHighlightedNode,
+                          std::vector<Tree23Node*>& insertPath)
+{
+    currentHighlightedNode = nullptr;
+    insertPath.clear();
+}
+
 int main()
 {
     srand((unsigned int)time(nullptr));
@@ -178,8 +185,10 @@ int main()
 
     std::vector<Tree23Node*> highlightPath;
     std::vector<Tree23Node*> fullSearchPath;
+    Tree23Node* currentHighlightedNode = nullptr;
     std::vector<Tree23Step> insertSteps;
     std::vector<Tree23Step> deleteSteps;
+    std::vector<Tree23Node*> insertPath;
 
     bool searchFound = false;
     bool isPlaying = false;
@@ -231,13 +240,33 @@ int main()
                         }
                         else if (tree.search(value))
                         {
-                        setStatus(ui, "Value already exists");
+                            setStatus(ui, "Value already exists");
                         }
                         else {
+                            resetAnimation(highlightPath, fullSearchPath,
+                                           currentAnimationStep, isPlaying,
+                                           searchFound, ui);
+
+                            resetDeleteAnimation(deleteSteps, currentDeleteStep,
+                                                 isDeletePlaying, pendingDeleteValue, ui, speedLabel);
+
+                            resetInsertPathState(currentHighlightedNode, insertPath);
+                            resetInsertAnimation(insertSteps, currentInsertStep,
+                                                 isInsertPlaying, pendingInsertValue, ui, speedLabel);
+
+                            insertPath = tree.getInsertPath(value);
                             insertSteps = tree.getInsertSteps(value);
+
                             pendingInsertValue = value;
                             currentInsertStep = 0;
                             isInsertPlaying = true;
+
+                            if (!insertPath.empty())
+                            {
+                                highlightPath.clear();
+                                highlightPath.push_back(insertPath[0]);
+                                currentHighlightedNode = insertPath[0];
+                            }
 
                             if (!insertSteps.empty())
                             {
@@ -262,8 +291,16 @@ int main()
                             setStatus(ui, "Invalid input");
                         }
                         else {
+                            resetInsertPathState(currentHighlightedNode, insertPath);
+                            resetInsertAnimation(insertSteps, currentInsertStep,
+                                                 isInsertPlaying, pendingInsertValue, ui, speedLabel);
+
+                            resetDeleteAnimation(deleteSteps, currentDeleteStep,
+                                                 isDeletePlaying, pendingDeleteValue, ui, speedLabel);
+
                             fullSearchPath = tree.getSearchPath(value, searchFound);
                             highlightPath.clear();
+                            currentHighlightedNode = nullptr;
 
                             if (fullSearchPath.empty())
                             {
@@ -282,6 +319,7 @@ int main()
                             else {
                                 currentAnimationStep = 0;
                                 highlightPath.push_back(fullSearchPath[0]);
+                                currentHighlightedNode = fullSearchPath[0];
 
                                 if ((int)fullSearchPath.size() > 1)
                                 {
@@ -291,6 +329,11 @@ int main()
                                 }
                                 else {
                                     isPlaying = false;
+
+                                    highlightPath.clear();
+                                    highlightPath.push_back(fullSearchPath[0]);
+                                    currentHighlightedNode = fullSearchPath[0];
+
                                     updateAnimationText(ui, "Animation: finished", speedLabel);
 
                                     if (searchFound)
@@ -319,6 +362,17 @@ int main()
                             setStatus(ui, "Value does not exist");
                         }
                         else {
+                            resetAnimation(highlightPath, fullSearchPath,
+                                           currentAnimationStep, isPlaying,
+                                           searchFound, ui);
+
+                            resetInsertPathState(currentHighlightedNode, insertPath);
+                            resetInsertAnimation(insertSteps, currentInsertStep,
+                                                 isInsertPlaying, pendingInsertValue, ui, speedLabel);
+
+                            resetDeleteAnimation(deleteSteps, currentDeleteStep,
+                                                 isDeletePlaying, pendingDeleteValue, ui, speedLabel);
+
                             deleteSteps = tree.getDeleteSteps(value);
                             pendingDeleteValue = value;
                             currentDeleteStep = 0;
@@ -353,11 +407,11 @@ int main()
                                 ui.inputBuffer = "";
                                 ui.inputText.setString("");
 
-                                highlightPath.clear();
-                                fullSearchPath.clear();
-                                currentAnimationStep = -1;
-                                isPlaying = false;
-                                searchFound = false;
+                                resetInsertPathState(currentHighlightedNode, insertPath);
+
+                                resetAnimation(highlightPath, fullSearchPath,
+                                               currentAnimationStep, isPlaying,
+                                               searchFound, ui);
 
                                 resetInsertAnimation(insertSteps, currentInsertStep,
                                                      isInsertPlaying, pendingInsertValue, ui, speedLabel);
@@ -366,7 +420,7 @@ int main()
                                                      isDeletePlaying, pendingDeleteValue, ui, speedLabel);
                             }
                             else {
-                                setStatus(ui, "Update failed");
+                            setStatus(ui, "Update failed");
                             }
                         }
                     }
@@ -377,11 +431,16 @@ int main()
                         ui.inputBuffer = "";
                         ui.inputText.setString("");
                         setStatus(ui, "Tree reset");
+
+                        resetInsertPathState(currentHighlightedNode, insertPath);
+
                         resetAnimation(highlightPath, fullSearchPath,
                                        currentAnimationStep, isPlaying,
                                        searchFound, ui);
-                        resetInsertAnimation(insertSteps, currentInsertStep, 
+
+                        resetInsertAnimation(insertSteps, currentInsertStep,
                                              isInsertPlaying, pendingInsertValue, ui, speedLabel);
+
                         resetDeleteAnimation(deleteSteps, currentDeleteStep,
                                              isDeletePlaying, pendingDeleteValue, ui, speedLabel);
                     }
@@ -394,11 +453,11 @@ int main()
                         ui.inputText.setString("");
                         setStatus(ui, "Random tree initialized");
 
-                        highlightPath.clear();
-                        fullSearchPath.clear();
-                        currentAnimationStep = -1;
-                        isPlaying = false;
-                        searchFound = false;
+                        resetInsertPathState(currentHighlightedNode, insertPath);
+
+                        resetAnimation(highlightPath, fullSearchPath,
+                                       currentAnimationStep, isPlaying,
+                                       searchFound, ui);
 
                         resetInsertAnimation(insertSteps, currentInsertStep,
                                              isInsertPlaying, pendingInsertValue, ui, speedLabel);
@@ -415,11 +474,11 @@ int main()
                         ui.inputText.setString("");
                         setStatus(ui, "Sample tree initialized");
 
-                        highlightPath.clear();
-                        fullSearchPath.clear();
-                        currentAnimationStep = -1;
-                        isPlaying = false;
-                        searchFound = false;
+                        resetInsertPathState(currentHighlightedNode, insertPath);
+
+                        resetAnimation(highlightPath, fullSearchPath,
+                                       currentAnimationStep, isPlaying,
+                                       searchFound, ui);
 
                         resetInsertAnimation(insertSteps, currentInsertStep,
                                              isInsertPlaying, pendingInsertValue, ui, speedLabel);
@@ -506,10 +565,30 @@ int main()
                         setStatus(ui, "Value already exists");
                     }
                     else {
+                        resetAnimation(highlightPath, fullSearchPath,
+                                       currentAnimationStep, isPlaying,
+                                       searchFound, ui);
+
+                        resetDeleteAnimation(deleteSteps, currentDeleteStep,
+                                             isDeletePlaying, pendingDeleteValue, ui, speedLabel);
+
+                        resetInsertPathState(currentHighlightedNode, insertPath);
+                        resetInsertAnimation(insertSteps, currentInsertStep,
+                                             isInsertPlaying, pendingInsertValue, ui, speedLabel);
+
+                        insertPath = tree.getInsertPath(value);
                         insertSteps = tree.getInsertSteps(value);
+
                         pendingInsertValue = value;
                         currentInsertStep = 0;
                         isInsertPlaying = true;
+
+                        if (!insertPath.empty())
+                        {
+                            highlightPath.clear();
+                            highlightPath.push_back(insertPath[0]);
+                            currentHighlightedNode = insertPath[0];
+                        }
 
                         if (!insertSteps.empty())
                         {
@@ -536,6 +615,13 @@ int main()
                 {
                     currentInsertStep++;
                     updateAnimationText(ui, "Animation: " + insertSteps[currentInsertStep].action, speedLabel);
+
+                    if (currentInsertStep < (int)insertPath.size())
+                    {
+                        highlightPath.clear();
+                        highlightPath.push_back(insertPath[currentInsertStep]);
+                        currentHighlightedNode = insertPath[currentInsertStep];
+                    }
                 }
                 else {
                     tree.insert(pendingInsertValue);
@@ -544,16 +630,12 @@ int main()
                     ui.inputText.setString("");
                     setStatus(ui, "Insert successful");
 
-                    insertSteps.clear();
-                    currentInsertStep = -1;
-                    isInsertPlaying = false;
-                    pendingInsertValue = 0;
-                    updateAnimationText(ui, "Animation: finished insert", speedLabel);
+                    resetInsertPathState(currentHighlightedNode, insertPath);
+                    resetInsertAnimation(insertSteps, currentInsertStep,
+                                         isInsertPlaying, pendingInsertValue, ui, speedLabel);
 
-                    deleteSteps.clear();
-                    currentDeleteStep = -1;
-                    isDeletePlaying = false;
-                    pendingDeleteValue = 0;
+                    highlightPath.clear();
+                    updateAnimationText(ui, "Animation: finished insert", speedLabel);
                 }
             }
         }
@@ -575,6 +657,7 @@ int main()
                     ui.inputBuffer = "";
                     ui.inputText.setString("");
                     setStatus(ui, "Delete successful");
+                    currentHighlightedNode = nullptr;
 
                     deleteSteps.clear();
                     currentDeleteStep = -1;
@@ -600,15 +683,24 @@ int main()
                 if (currentAnimationStep + 1 < (int)fullSearchPath.size())
                 {
                     currentAnimationStep++;
-                    highlightPath.clear();
 
-                    for (int i = 0; i <= currentAnimationStep; i++)
-                    {
-                        highlightPath.push_back(fullSearchPath[i]);
-                    }
+                    highlightPath.clear();
+                    highlightPath.push_back(fullSearchPath[currentAnimationStep]);
+                    currentHighlightedNode = fullSearchPath[currentAnimationStep];
                 }
                 else {
                     isPlaying = false;
+
+                    highlightPath.clear();
+                    if (!fullSearchPath.empty())
+                    {
+                        highlightPath.push_back(fullSearchPath.back());
+                        currentHighlightedNode = fullSearchPath.back();
+                    }
+                    else {
+                        currentHighlightedNode = nullptr;
+                    }
+
                     updateAnimationText(ui, "Animation: finished", speedLabel);
 
                     if (searchFound)
@@ -624,7 +716,7 @@ int main()
 
         window.clear();
         drawUI(window, ui);
-        drawTreeVisual(window, ui, tree, highlightPath, searchFound);
+        drawTreeVisual(window, ui, tree, highlightPath, searchFound, currentHighlightedNode);
         window.display();
     }
 

@@ -614,3 +614,25 @@ std::vector<Tree23Step> Tree23::getDeleteSteps(int value) const
 
     return steps;
 }
+
+std::vector<Tree23Node*> Tree23::getInsertPath(int value) const
+{
+    std::vector<Tree23Node*> path;
+
+    Tree23Node* cur = root;
+
+    while (cur != nullptr)
+    {
+        path.push_back(cur);
+
+        if (cur->isLeaf())
+        {
+            return path;
+        }
+
+        int childIndex = getChildIndex(cur, value);
+        cur = cur->child[childIndex];
+    }
+
+    return path;
+}

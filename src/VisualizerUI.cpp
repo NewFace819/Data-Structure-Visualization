@@ -290,7 +290,8 @@ void drawArrow(sf::RenderWindow& window, sf::Vector2f start, sf::Vector2f end)
 
 void drawNodeBox(sf::RenderWindow& window, const sf::Font& font, Tree23Node* node,
                  float centerX, float topY,
-                 const std::vector<Tree23Node*>& highlightPath, bool found)
+                 const std::vector<Tree23Node*>& highlightPath, bool found,
+                 Tree23Node* currentHighlightedNode)
 {
     float keyWidth = 55.f;
     float nodeHeight = 45.f;
@@ -315,8 +316,15 @@ void drawNodeBox(sf::RenderWindow& window, const sf::Font& font, Tree23Node* nod
         box.setFillColor(sf::Color::White);
     }
 
-    box.setOutlineThickness(2.f);
-    box.setOutlineColor(sf::Color::Black);
+    if (node == currentHighlightedNode)
+    {
+        box.setOutlineThickness(4.f);
+        box.setOutlineColor(sf::Color(0, 180, 0));
+    }
+    else {
+        box.setOutlineThickness(2.f);
+        box.setOutlineColor(sf::Color::Black);
+    }
     window.draw(box);
 
     if (node->keyCount == 2)
@@ -355,7 +363,8 @@ void drawNodeBox(sf::RenderWindow& window, const sf::Font& font, Tree23Node* nod
 
 void drawTreeRecursive(sf::RenderWindow& window, const sf::Font& font, Tree23Node* node,
                        float centerX, float topY, float offset,
-                       const std::vector<Tree23Node*>& highlightPath, bool found)
+                       const std::vector<Tree23Node*>& highlightPath, bool found,
+                       Tree23Node* currentHighlightedNode)
 {
     if (node == nullptr)
     {
@@ -364,7 +373,7 @@ void drawTreeRecursive(sf::RenderWindow& window, const sf::Font& font, Tree23Nod
 
     float nodeHeight = 45.f;
 
-    drawNodeBox(window, font, node, centerX, topY, highlightPath, found);
+    drawNodeBox(window, font, node, centerX, topY, highlightPath, found, currentHighlightedNode);
 
     float nextY = topY + 110.f;
     float nextOffset = offset * 0.55f;
@@ -385,7 +394,8 @@ void drawTreeRecursive(sf::RenderWindow& window, const sf::Font& font, Tree23Nod
             drawArrow(window,
                       sf::Vector2f(parentBottomX, parentBottomY),
                       sf::Vector2f(childX, nextY));
-            drawTreeRecursive(window, font, node->child[0], childX, nextY, nextOffset, highlightPath, found);
+            drawTreeRecursive(window, font, node->child[0], childX, nextY, nextOffset,
+                  highlightPath, found, currentHighlightedNode);
         }
 
         if (node->child[2] != nullptr)
@@ -394,7 +404,8 @@ void drawTreeRecursive(sf::RenderWindow& window, const sf::Font& font, Tree23Nod
             drawArrow(window,
                       sf::Vector2f(parentBottomX, parentBottomY),
                       sf::Vector2f(childX, nextY));
-            drawTreeRecursive(window, font, node->child[2], childX, nextY, nextOffset, highlightPath, found);
+            drawTreeRecursive(window, font, node->child[2], childX, nextY, nextOffset,
+                  highlightPath, found, currentHighlightedNode);
         }
     }
     else
@@ -405,7 +416,8 @@ void drawTreeRecursive(sf::RenderWindow& window, const sf::Font& font, Tree23Nod
             drawArrow(window,
                       sf::Vector2f(parentBottomX, parentBottomY),
                       sf::Vector2f(childX, nextY));
-            drawTreeRecursive(window, font, node->child[0], childX, nextY, nextOffset, highlightPath, found);
+            drawTreeRecursive(window, font, node->child[0], childX, nextY, nextOffset,
+                  highlightPath, found, currentHighlightedNode);
         }
 
         if (node->child[1] != nullptr)
@@ -414,7 +426,8 @@ void drawTreeRecursive(sf::RenderWindow& window, const sf::Font& font, Tree23Nod
             drawArrow(window,
                       sf::Vector2f(parentBottomX, parentBottomY),
                       sf::Vector2f(childX, nextY));
-            drawTreeRecursive(window, font, node->child[1], childX, nextY, nextOffset, highlightPath, found);
+            drawTreeRecursive(window, font, node->child[1], childX, nextY, nextOffset,
+                  highlightPath, found, currentHighlightedNode);
         }
 
         if (node->child[2] != nullptr)
@@ -423,13 +436,15 @@ void drawTreeRecursive(sf::RenderWindow& window, const sf::Font& font, Tree23Nod
             drawArrow(window,
                       sf::Vector2f(parentBottomX, parentBottomY),
                       sf::Vector2f(childX, nextY));
-            drawTreeRecursive(window, font, node->child[2], childX, nextY, nextOffset, highlightPath, found);
+            drawTreeRecursive(window, font, node->child[2], childX, nextY, nextOffset,
+                  highlightPath, found, currentHighlightedNode);
         }
     }
 }
 
 void drawTreeVisual(sf::RenderWindow& window, VisualizerUI& ui, const Tree23& tree,
-                    const std::vector<Tree23Node*>& highlightPath, bool found)
+                    const std::vector<Tree23Node*>& highlightPath, bool found,
+                    Tree23Node* currentHighlightedNode)
 {
     if (tree.isEmpty())
     {
@@ -454,5 +469,5 @@ void drawTreeVisual(sf::RenderWindow& window, VisualizerUI& ui, const Tree23& tr
     float startY = 90.f;
     float startOffset = 220.f;
 
-    drawTreeRecursive(window, *font, root, startX, startY, startOffset, highlightPath, found);
+    drawTreeRecursive(window, *font, root, startX, startY, startOffset, highlightPath, found, currentHighlightedNode);
 }

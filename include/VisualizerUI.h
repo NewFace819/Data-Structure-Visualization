@@ -59,4 +59,5 @@ int getInputValue(const VisualizerUI& ui, bool& isValid);
 void setStatus(VisualizerUI& ui, const std::string& message);
 
 void drawTreeVisual(sf::RenderWindow& window, VisualizerUI& ui, const Tree23& tree,
-                    const std::vector<Tree23Node*>& highlightPath, bool found);
+                    const std::vector<Tree23Node*>& highlightPath, bool found,
+                    Tree23Node* currentHighlightedNode);
