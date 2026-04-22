@@ -8,6 +8,7 @@
 #include <SFML/Graphics.hpp>
 #include <vector>
 #include <string>
+#include "CodeBox.h"
 
 class Tree23State : public VisualizerState
 {
@@ -23,6 +24,7 @@ public:
 private:
     Tree23 m_tree;
     VisualizerUI m_ui;
+    CodeBox m_codeBox;
 
     std::vector<Tree23Node*> m_highlightPath;
     std::vector<Tree23Node*> m_fullSearchPath;
@@ -44,6 +46,10 @@ private:
     int m_currentDeleteStep = -1;
     int m_pendingDeleteValue = 0;
 
+    bool m_isUpdatePlaying = false;
+    int m_pendingOldValue = 0;
+    int m_pendingNewValue = 0;
+
     TreeSnapshot m_currentSnapshot;
     TreeSnapshot m_snapshotFrom;
     TreeSnapshot m_snapshotTo;
@@ -63,4 +69,10 @@ private:
     sf::Clock m_snapshotTransitionClock;
     float m_animationDelay = 0.8f;
     std::string m_speedLabel = "Normal";
+
+    void resetCodeBox();
+    void showInsertCode(int step);
+    void showSearchCode(int step, bool found = false);
+    void showDeleteCode(int step);
+    void showUpdateCode(int step);
 };

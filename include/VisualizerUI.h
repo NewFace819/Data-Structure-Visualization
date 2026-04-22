@@ -32,6 +32,8 @@ struct VisualizerUI
     ToolbarButton slowButton;
     ToolbarButton normalButton;
     ToolbarButton fastButton;
+    sf::RectangleShape backButton;
+    sf::Text backButtonText;
 
     sf::Text titleText;
     sf::Text statusText;
