@@ -2,9 +2,9 @@
 #include "MenuState.h"
 #include <iostream>
 
-App::App() : m_window(sf::VideoMode(1280, 720), "Data Structure Visualizer", sf::Style::Titlebar | sf::Style::Close), m_isChangingState(false)
+App::App() : m_window(sf::VideoMode(1280, 720), "Data Structure Visualizer", sf::Style::Titlebar | sf::Style::Close, sf::ContextSettings(0, 0, 8)), m_isChangingState(false)
 {
-    m_window.setVerticalSyncEnabled(true); // VSync: eliminates tearing and reduces CPU busy-wait
+    m_window.setVerticalSyncEnabled(true); // Enable VSync
     loadResources();
     pushState(std::make_unique<MenuState>(this));
 }
@@ -25,8 +25,7 @@ void App::run()
         update(dt);
         render();
 
-        // State Queue Resolution: Thay vì popState() ngay giữa chừng lúc đang click,
-        // Ta đợi tới cuối Frame mới chuyển State, tránh bị lỗi xóa chính Button đang click.
+        // Delay state switch
         if (m_isChangingState) {
             if (!m_states.empty())
                 m_states.pop();
@@ -70,7 +69,7 @@ const sf::Font& App::getFont() const
 
 void App::loadResources()
 {
-    // Load SF Pro Display font (Apple's UI Font) for a modern look
+    // Load main UI font
     if (!m_mainFont.loadFromFile("assets/SF-Pro-Display-Regular.otf"))
     {
         std::cerr << "Warning: Failed to load font\n";
@@ -100,9 +99,9 @@ void App::render()
 {
     m_window.clear(); 
     
-    // Tạo hình nền Gradient Trắng -> Xám (Từ Trái sang Phải)
-    sf::Color colorLeft(250, 250, 250);   // Trắng (hơi đục 1 tí xíu cho êm mắt)
-    sf::Color colorRight(190, 190, 190);  // Xám nhạt
+    // Gradient bg
+    sf::Color colorLeft(250, 250, 250);
+    sf::Color colorRight(190, 190, 190);
 
     sf::Vertex bg[] = {
         sf::Vertex(sf::Vector2f(0.0f, 0.0f), colorLeft),         // Top-Left
