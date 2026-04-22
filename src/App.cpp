@@ -2,7 +2,7 @@
 #include "MenuState.h"
 #include <iostream>
 
-App::App() : m_window(sf::VideoMode(1280, 720), "Data Structure Visualizer", sf::Style::Titlebar | sf::Style::Close, sf::ContextSettings(0, 0, 8)), m_isChangingState(false)
+App::App() : m_window(sf::VideoMode(1400, 800), "Data Structure Visualizer", sf::Style::Titlebar | sf::Style::Close, sf::ContextSettings(0, 0, 8)), m_isChangingState(false)
 {
     m_window.setVerticalSyncEnabled(true); // Enable VSync
     loadResources();
@@ -103,11 +103,13 @@ void App::render()
     sf::Color colorLeft(250, 250, 250);
     sf::Color colorRight(190, 190, 190);
 
+    sf::Vector2u size = m_window.getSize();
+
     sf::Vertex bg[] = {
-        sf::Vertex(sf::Vector2f(0.0f, 0.0f), colorLeft),         // Top-Left
-        sf::Vertex(sf::Vector2f(1280.0f, 0.0f), colorRight),     // Top-Right
-        sf::Vertex(sf::Vector2f(1280.0f, 720.0f), colorRight),   // Bottom-Right
-        sf::Vertex(sf::Vector2f(0.0f, 720.0f), colorLeft)        // Bottom-Left
+        sf::Vertex(sf::Vector2f(0.0f, 0.0f), colorLeft),
+        sf::Vertex(sf::Vector2f((float)size.x, 0.0f), colorRight),
+        sf::Vertex(sf::Vector2f((float)size.x, (float)size.y), colorRight),
+        sf::Vertex(sf::Vector2f(0.0f, (float)size.y), colorLeft)
     };
     m_window.draw(bg, 4, sf::Quads);
     

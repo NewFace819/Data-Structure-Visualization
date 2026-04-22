@@ -138,6 +138,27 @@ setupButton(ui.fastButton, font, "Fast",
         sf::Vector2f(leftWidth + ((float)windowSize.x - leftWidth) / 2.f,
                      (float)windowSize.y / 2.f)
     );
+
+    ui.backButton.setSize(sf::Vector2f(140.f, 44.f));
+    ui.backButton.setFillColor(sf::Color(70, 70, 90));
+    ui.backButton.setOutlineThickness(2.f);
+    ui.backButton.setOutlineColor(sf::Color::White);
+    ui.backButton.setPosition(windowSize.x - 170.f, windowSize.y - 70.f);
+
+    ui.backButtonText.setFont(font);
+    ui.backButtonText.setString("Back");
+    ui.backButtonText.setCharacterSize(24);
+    ui.backButtonText.setFillColor(sf::Color::White);
+
+    sf::FloatRect backTextBounds = ui.backButtonText.getLocalBounds();
+    ui.backButtonText.setOrigin(
+        backTextBounds.left + backTextBounds.width / 2.f,
+        backTextBounds.top + backTextBounds.height / 2.f
+    );
+    ui.backButtonText.setPosition(
+        ui.backButton.getPosition().x + ui.backButton.getSize().x / 2.f,
+        ui.backButton.getPosition().y + ui.backButton.getSize().y / 2.f
+    );
 }
 
 void drawUI(sf::RenderWindow& window, VisualizerUI& ui)
@@ -188,6 +209,9 @@ void drawUI(sf::RenderWindow& window, VisualizerUI& ui)
 
     window.draw(ui.statusText);
     window.draw(ui.animationText);
+
+    window.draw(ui.backButton);
+    window.draw(ui.backButtonText);
 }
 
 bool isInside(const sf::RectangleShape& box, sf::Vector2f mousePos)

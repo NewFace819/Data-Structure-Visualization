@@ -478,11 +478,106 @@ static std::string buildPathIdFromSearchPath(const std::vector<Tree23Node*>& pat
 
     return nodeId;
 }
+
 Tree23State::Tree23State(App* app)
-    : VisualizerState(app, "2-3 Tree")
+    : VisualizerState(app, "2-3 Tree"),
+      m_codeBox(
+          app->getFont(),
+          318.0f,
+          (float)app->getWindow().getSize().y - 170.0f,
+          (float)app->getWindow().getSize().x - 318.0f,
+          170.0f
+      )
 {
 }
 
+void Tree23State::resetCodeBox()
+{
+    m_codeBox.setTitle("Code & Process");
+    m_codeBox.setCode({
+        "Choose an operation to visualize.",
+        "Insert / Search / Delete / Update",
+        "Code steps will appear here."
+    });
+    m_codeBox.highlightLine(-1);
+}
+
+void Tree23State::showInsertCode(int step)
+{
+    m_codeBox.setTitle("Code & Process");
+    m_codeBox.setCode({
+        "void insert(int value) {",
+        "    Tree23Node* cur = root;",
+        "    while (!isLeaf(cur)) cur = nextChild(cur, value);",
+        "    insertIntoLeaf(cur, value);",
+        "    if (isOverflow(cur)) split(cur);",
+        "}"
+    });
+
+    if (step == 0) m_codeBox.highlightLine(1);
+    else if (step == 1) m_codeBox.highlightLine(2);
+    else if (step == 2) m_codeBox.highlightLine(3);
+    else if (step == 3) m_codeBox.highlightLine(4);
+    else m_codeBox.highlightLine(5);
+}
+
+void Tree23State::showSearchCode(int step, bool found)
+{
+    m_codeBox.setTitle("Code & Process");
+    m_codeBox.setCode({
+        "bool search(int value) {",
+        "    Tree23Node* cur = root;",
+        "    while (cur != nullptr) {",
+        "        if (contains(cur, value)) return true;",
+        "        cur = nextChild(cur, value);",
+        "    }",
+        "    return false;",
+        "}"
+    });
+
+    if (step == 0) m_codeBox.highlightLine(1);
+    else if (step == 1) m_codeBox.highlightLine(2);
+    else if (step == 2) m_codeBox.highlightLine(4);
+    else if (found) m_codeBox.highlightLine(3);
+    else m_codeBox.highlightLine(6);
+}
+
+void Tree23State::showDeleteCode(int step)
+{
+    m_codeBox.setTitle("Code & Process");
+    m_codeBox.setCode({
+        "void remove(int value) {",
+        "    Tree23Node* cur = findNode(root, value);",
+        "    if (cur == nullptr) return;",
+        "    eraseKey(cur, value);",
+        "    if (isUnderflow(cur)) rebalance(cur);",
+        "}"
+    });
+
+    if (step == 0) m_codeBox.highlightLine(1);
+    else if (step == 1) m_codeBox.highlightLine(2);
+    else if (step == 2) m_codeBox.highlightLine(3);
+    else if (step == 3) m_codeBox.highlightLine(4);
+    else m_codeBox.highlightLine(5);
+}
+
+void Tree23State::showUpdateCode(int step)
+{
+    m_codeBox.setTitle("Code & Process");
+    m_codeBox.setCode({
+        "void update(int oldValue, int newValue) {",
+        "    if (!search(oldValue)) return;",
+        "    remove(oldValue);",
+        "    insert(newValue);",
+        "}"
+    });
+
+    if (step == 0) m_codeBox.highlightLine(1);
+    else if (step == 1) m_codeBox.highlightLine(1);
+    else if (step == 2) m_codeBox.highlightLine(2);
+    else if (step == 3) m_codeBox.highlightLine(3);
+    else m_codeBox.highlightLine(4);
+}
 void Tree23State::init()
 {
     m_tree.clear();
@@ -530,6 +625,7 @@ void Tree23State::init()
     setupUI(m_ui, m_app->getFont(), m_app->getWindow().getSize());
     m_ui.statusText.setString("Ready");
     updateAnimationText(m_ui, "Animation: idle", m_speedLabel);
+    resetCodeBox();
 
     std::srand((unsigned int)std::time(nullptr));
 }
@@ -551,6 +647,11 @@ void Tree23State::handleInput(const sf::Event& event)
             sf::Vector2f mousePos = window.mapPixelToCoords(
                 sf::Vector2i(event.mouseButton.x, event.mouseButton.y)
             );
+            if (m_ui.backButton.getGlobalBounds().contains(mousePos))
+            {
+                m_app->changeState(std::make_unique<TreeGroup>(m_app));
+                return;
+            }
 
             if (isInside(m_ui.inputBox, mousePos))
             {
@@ -613,6 +714,7 @@ void Tree23State::handleInput(const sf::Event& event)
                         updateAnimationText(m_ui, "Animation: idle", m_speedLabel);
                     }
 
+                    showInsertCode(0);
                     m_animationClock.restart();
                     setStatus(m_ui, "Insert animation started");
                 }
@@ -639,6 +741,7 @@ void Tree23State::handleInput(const sf::Event& event)
                     m_highlightPath.clear();
                     m_currentHighlightedNode = nullptr;
 
+                    showSearchCode(0, m_searchFound);
                     if (m_fullSearchPath.empty())
                     {
                         if (m_searchFound)
@@ -655,6 +758,7 @@ void Tree23State::handleInput(const sf::Event& event)
                     }
                     else {
                         m_currentAnimationStep = 0;
+                        showSearchCode(0, m_searchFound);
                         m_highlightPath.push_back(m_fullSearchPath[0]);
                         m_currentHighlightedNode = m_fullSearchPath[0];
                         highlightSnapshotNodeByPath(m_currentSnapshot, buildPathIdFromSearchPath(m_fullSearchPath, 0));
@@ -711,6 +815,25 @@ void Tree23State::handleInput(const sf::Event& event)
                     resetDeleteAnimation(m_deleteSteps, m_currentDeleteStep,
                                          m_isDeletePlaying, m_pendingDeleteValue, m_ui, m_speedLabel);
 
+                    bool foundForDelete = false;
+                    m_fullSearchPath = m_tree.getSearchPath(value, foundForDelete);
+
+                    m_highlightPath.clear();
+                    if (!m_fullSearchPath.empty())
+                    {
+                        m_highlightPath = m_fullSearchPath;
+                        m_currentHighlightedNode = m_fullSearchPath.back();
+
+                        highlightSnapshotNodeByPath(
+                        m_currentSnapshot,
+                        buildPathIdFromSearchPath(m_fullSearchPath, (int)m_fullSearchPath.size() - 1)
+                        );
+                    }
+                    else {
+                        m_currentHighlightedNode = nullptr;
+                        clearSnapshotHighlight(m_currentSnapshot);
+                    }
+
                     m_deleteSteps = m_tree.getDeleteSteps(value);
                     m_pendingDeleteValue = value;
                     m_currentDeleteStep = 0;
@@ -724,6 +847,7 @@ void Tree23State::handleInput(const sf::Event& event)
                         updateAnimationText(m_ui, "Animation: idle", m_speedLabel);
                     }
 
+                    showDeleteCode(0);
                     m_animationClock.restart();
                     setStatus(m_ui, "Delete animation started");
                 }
@@ -739,29 +863,33 @@ void Tree23State::handleInput(const sf::Event& event)
                     setStatus(m_ui, "Invalid update format");
                 }
                 else {
-                    if (m_tree.update(oldValue, newValue))
+                    bool foundForUpdate = false;
+                    m_fullSearchPath = m_tree.getSearchPath(oldValue, foundForUpdate);
+
+                    m_highlightPath.clear();
+                    if (!m_fullSearchPath.empty())
                     {
-                        setStatus(m_ui, "Update successful");
-                        m_currentSnapshot = buildSnapshotFromTree(m_tree);
-                        clearSnapshotHighlight(m_currentSnapshot);
-                        m_ui.inputBuffer = "";
-                        m_ui.inputText.setString("");
+                        m_highlightPath = m_fullSearchPath;
+                        m_currentHighlightedNode = m_fullSearchPath.back();
 
-                        resetInsertPathState(m_currentHighlightedNode, m_insertPath);
-
-                        resetAnimation(m_highlightPath, m_fullSearchPath,
-                                       m_currentAnimationStep, m_isPlaying,
-                                       m_searchFound, m_ui);
-
-                        resetInsertAnimation(m_insertSteps, m_currentInsertStep,
-                                             m_isInsertPlaying, m_pendingInsertValue, m_ui, m_speedLabel);
-
-                        resetDeleteAnimation(m_deleteSteps, m_currentDeleteStep,
-                                             m_isDeletePlaying, m_pendingDeleteValue, m_ui, m_speedLabel);
+                        highlightSnapshotNodeByPath(
+                            m_currentSnapshot,
+                            buildPathIdFromSearchPath(m_fullSearchPath, (int)m_fullSearchPath.size() - 1)
+                        );
                     }
                     else {
-                        setStatus(m_ui, "Update failed");
+                        m_currentHighlightedNode = nullptr;
+                        clearSnapshotHighlight(m_currentSnapshot);
                     }
+
+                    m_pendingOldValue = oldValue;
+                    m_pendingNewValue = newValue;
+                    m_isUpdatePlaying = true;
+                    showUpdateCode(1);
+                    m_animationClock.restart();
+
+                    setStatus(m_ui, "Update animation started");
+                    updateAnimationText(m_ui, "Animation: update path", m_speedLabel);
                 }
             }
 
@@ -966,6 +1094,9 @@ void Tree23State::update(float dt)
             if (m_currentInsertStep + 1 < (int)m_insertSteps.size())
             {
                 m_currentInsertStep++;
+                if (m_currentInsertStep == 0) showInsertCode(1);
+                else if (m_currentInsertStep == 1) showInsertCode(2);
+                else if (m_currentInsertStep == 2) showInsertCode(3);
             }
 
             if (m_currentSequenceIndex + 1 < (int)m_currentSequence.frames.size())
@@ -1003,6 +1134,7 @@ void Tree23State::update(float dt)
 
                 clearSnapshotHighlight(m_currentSnapshot);
                 updateAnimationText(m_ui, "Animation: finished insert", m_speedLabel);
+                showInsertCode(4);
             }
         }
     }
@@ -1016,6 +1148,9 @@ void Tree23State::update(float dt)
             if (m_currentDeleteStep + 1 < (int)m_deleteSteps.size())
             {
                 m_currentDeleteStep++;
+                if (m_currentDeleteStep == 0) showDeleteCode(1);
+                else if (m_currentDeleteStep == 1) showDeleteCode(2);
+                else if (m_currentDeleteStep == 2) showDeleteCode(3);
                 updateAnimationText(m_ui, "Animation: " + m_deleteSteps[m_currentDeleteStep].action, m_speedLabel);
             }
             else {
@@ -1032,6 +1167,7 @@ void Tree23State::update(float dt)
                 m_isDeletePlaying = false;
                 m_pendingDeleteValue = 0;
                 updateAnimationText(m_ui, "Animation: finished delete", m_speedLabel);
+                showDeleteCode(4);
                 clearSnapshotHighlight(m_currentSnapshot);
 
                 m_highlightPath.clear();
@@ -1052,6 +1188,8 @@ void Tree23State::update(float dt)
             if (m_currentAnimationStep + 1 < (int)m_fullSearchPath.size())
             {
                 m_currentAnimationStep++;
+                if (m_currentAnimationStep == 1) showSearchCode(1, m_searchFound);
+                else if (m_currentAnimationStep >= 2) showSearchCode(2, m_searchFound);
 
                 m_highlightPath.clear();
                 m_highlightPath.push_back(m_fullSearchPath[m_currentAnimationStep]);
@@ -1082,6 +1220,7 @@ void Tree23State::update(float dt)
                 }
 
                 updateAnimationText(m_ui, "Animation: finished", m_speedLabel);
+                showSearchCode(3, m_searchFound);
 
                 if (m_searchFound)
                 {
@@ -1091,6 +1230,55 @@ void Tree23State::update(float dt)
                     setStatus(m_ui, "Not found");
                 }
             }
+        }
+    }
+
+    if (m_isUpdatePlaying)
+    {
+        if (m_animationClock.getElapsedTime().asSeconds() >= m_animationDelay)
+        {
+            m_animationClock.restart();
+            m_isUpdatePlaying = false;
+
+            showUpdateCode(2);
+
+            if (m_tree.update(m_pendingOldValue, m_pendingNewValue))
+            {
+                showUpdateCode(3);
+
+                m_currentSnapshot = buildSnapshotFromTree(m_tree);
+                clearSnapshotHighlight(m_currentSnapshot);
+
+                m_ui.inputBuffer = "";
+                m_ui.inputText.setString("");
+
+                m_highlightPath.clear();
+                m_fullSearchPath.clear();
+                m_currentHighlightedNode = nullptr;
+
+                resetInsertPathState(m_currentHighlightedNode, m_insertPath);
+
+                resetAnimation(m_highlightPath, m_fullSearchPath,
+                               m_currentAnimationStep, m_isPlaying,
+                               m_searchFound, m_ui);
+
+                resetInsertAnimation(m_insertSteps, m_currentInsertStep,
+                                     m_isInsertPlaying, m_pendingInsertValue, m_ui, m_speedLabel);
+
+                resetDeleteAnimation(m_deleteSteps, m_currentDeleteStep,
+                                     m_isDeletePlaying, m_pendingDeleteValue, m_ui, m_speedLabel);
+
+                setStatus(m_ui, "Update successful");
+                updateAnimationText(m_ui, "Animation: finished update", m_speedLabel);
+                showUpdateCode(4);
+            }
+            else {
+                setStatus(m_ui, "Update failed");
+                updateAnimationText(m_ui, "Animation: idle", m_speedLabel);
+            }
+
+            m_pendingOldValue = 0;
+            m_pendingNewValue = 0;
         }
     }
 
@@ -1126,4 +1314,9 @@ void Tree23State::draw(sf::RenderWindow& window)
     else {
         drawTreeSnapshot(window, m_ui, m_currentSnapshot);
     }
+
+    m_codeBox.draw(window);
+
+    window.draw(m_ui.backButton);
+    window.draw(m_ui.backButtonText);
 }
