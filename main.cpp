@@ -6,6 +6,7 @@
 #include <cstdlib>
 #include <ctime>
 #include<sstream>
+#include "TreeSnapshot.h"
 
 void updateAnimationText(VisualizerUI& ui, const std:: string& text, const std::string& speedLabel);
 
@@ -164,6 +165,129 @@ void resetInsertPathState(Tree23Node*& currentHighlightedNode,
     insertPath.clear();
 }
 
+std::string buildNodeId(Tree23Node* node, int level, int index)
+{
+    return "L" + std::to_string(level) + "_" + std::to_string(index);
+}
+
+int countLeaves(Tree23Node* node)
+{
+    if (node == nullptr)
+    {
+        return 0;
+    }
+
+    if (node->isLeaf())
+    {
+        return 1;
+    }
+
+    int total = 0;
+    for (int i = 0; i < 3; i++)
+    {
+        if (node->child[i] != nullptr)
+        {
+            total += countLeaves(node->child[i]);
+        }
+    }
+
+    return total;
+}
+
+std::string buildSnapshotRecursive(Tree23Node* node,
+                                   TreeSnapshot& snapshot,
+                                   int level,
+                                   float leftX,
+                                   float rightX,
+                                   float startY,
+                                   float levelGap,
+                                   const std::string& path)
+{
+    if (node == nullptr)
+    {
+        return "";
+    }
+
+    float centerX = (leftX + rightX) / 2.f;
+    float y = startY + level * levelGap;
+
+    std::string nodeId = path;
+    
+    VisualNode visualNode;
+    visualNode.id = nodeId;
+    visualNode.keyCount = node->keyCount;
+    visualNode.keys[0] = node->keys[0];
+    visualNode.keys[1] = (node->keyCount == 2 ? node->keys[1] : 0);
+    visualNode.x = centerX;
+    visualNode.y = y;
+
+    snapshot.nodes.push_back(visualNode);
+
+    if (node->isLeaf())
+    {
+        return nodeId;
+    }
+
+    int totalLeaves = 0;
+    for (int i = 0; i < 3; i++)
+    {
+        if (node->child[i] != nullptr)
+        {
+            totalLeaves += countLeaves(node->child[i]);
+        }
+    }
+
+    float currentLeft = leftX;
+
+    for (int i = 0; i < 3; i++)
+    {
+        if (node->child[i] != nullptr)
+        {
+            int childLeaves = countLeaves(node->child[i]);
+            float childWidth = (rightX - leftX) * childLeaves / (float)totalLeaves;
+            float childLeft = currentLeft;
+            float childRight = currentLeft + childWidth;
+
+            std::string childPath = path + "_" + std::to_string(i);
+            std::string childId = buildSnapshotRecursive(node->child[i], snapshot, level + 1,
+                                                         childLeft, childRight,
+                                                         startY, levelGap, childPath);
+
+            if (!childId.empty())
+            {
+                VisualEdge edge;
+                edge.parentId = nodeId;
+                edge.childId = childId;
+                snapshot.edges.push_back(edge);
+            }
+
+            currentLeft += childWidth;
+        }
+    }
+
+    return nodeId;
+}
+
+TreeSnapshot buildSnapshotFromTree(const Tree23& tree)
+{
+    TreeSnapshot snapshot;
+
+    Tree23Node* root = tree.getRoot();
+    if (root == nullptr)
+    {
+        return snapshot;
+    }
+
+    float startY = 90.f;
+    float levelGap = 110.f;
+    float leftBound = 380.f;
+    float rightBound = 1290.f;
+
+    buildSnapshotRecursive(root, snapshot, 0, leftBound, rightBound,
+                           startY, levelGap, "root");
+
+    return snapshot;
+}
 int main()
 {
     srand((unsigned int)time(nullptr));
@@ -182,6 +306,16 @@ int main()
     ui.animationText.setString("Animation: idle | Speed: Normal");
 
     Tree23 tree;
+    TreeSnapshot currentSnapshot;
+    TreeSnapshot snapshotFrom;
+    TreeSnapshot snapshotTo;
+
+    bool isSnapshotTransitionPlaying = false;
+    float snapshotTransitionProgress = 0.f;
+    float snapshotTransitionDuration = 0.45f;
+
+    sf::Clock snapshotTransitionClock;
+    currentSnapshot = buildSnapshotFromTree(tree);
 
     std::vector<Tree23Node*> highlightPath;
     std::vector<Tree23Node*> fullSearchPath;
@@ -404,6 +538,7 @@ int main()
                             if (tree.update(oldValue, newValue))
                             {
                                 setStatus(ui, "Update successful");
+                                currentSnapshot = buildSnapshotFromTree(tree);
                                 ui.inputBuffer = "";
                                 ui.inputText.setString("");
 
@@ -428,6 +563,7 @@ int main()
                     if (isButtonClicked(ui.resetButton, mousePos))
                     {
                         tree.clear();
+                        currentSnapshot = buildSnapshotFromTree(tree);
                         ui.inputBuffer = "";
                         ui.inputText.setString("");
                         setStatus(ui, "Tree reset");
@@ -448,6 +584,7 @@ int main()
                     if (isButtonClicked(ui.initRandomButton, mousePos))
                     {
                         initializeRandomTree(tree);
+                        currentSnapshot = buildSnapshotFromTree(tree);
 
                         ui.inputBuffer = "";
                         ui.inputText.setString("");
@@ -469,6 +606,7 @@ int main()
                     if (isButtonClicked(ui.initSampleButton, mousePos))
                     {
                         initializeSampleTree(tree);
+                        currentSnapshot = buildSnapshotFromTree(tree);
 
                         ui.inputBuffer = "";
                         ui.inputText.setString("");
@@ -624,7 +762,15 @@ int main()
                     }
                 }
                 else {
+                    snapshotFrom = currentSnapshot;
+
                     tree.insert(pendingInsertValue);
+
+                    snapshotTo = buildSnapshotFromTree(tree);
+
+                    isSnapshotTransitionPlaying = true;
+                    snapshotTransitionProgress = 0.f;
+                    snapshotTransitionClock.restart();
 
                     ui.inputBuffer = "";
                     ui.inputText.setString("");
@@ -653,6 +799,7 @@ int main()
                 }
                 else {
                     tree.remove(pendingDeleteValue);
+                    currentSnapshot = buildSnapshotFromTree(tree);
 
                     ui.inputBuffer = "";
                     ui.inputText.setString("");
@@ -713,10 +860,30 @@ int main()
                 }
             }
         }
+        
+        if (isSnapshotTransitionPlaying)
+        {
+            float elapsed = snapshotTransitionClock.getElapsedTime().asSeconds();
+            snapshotTransitionProgress = elapsed / snapshotTransitionDuration;
+
+            if (snapshotTransitionProgress >= 1.f)
+            {
+                snapshotTransitionProgress = 1.f;
+                isSnapshotTransitionPlaying = false;
+                currentSnapshot = snapshotTo;
+            }
+        }
 
         window.clear();
         drawUI(window, ui);
-        drawTreeVisual(window, ui, tree, highlightPath, searchFound, currentHighlightedNode);
+        if (isSnapshotTransitionPlaying)
+        {
+            TreeSnapshot interpolated = interpolateSnapshot(snapshotFrom, snapshotTo, snapshotTransitionProgress);
+            drawTreeSnapshot(window, ui, interpolated, currentHighlightedNode);
+        }
+        else {
+            drawTreeSnapshot(window, ui, currentSnapshot, currentHighlightedNode);
+        }
         window.display();
     }
 

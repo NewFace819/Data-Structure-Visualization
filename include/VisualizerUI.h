@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 #include "Tree23.h"
-
+#include "TreeSnapshot.h"
 struct ToolbarButton
 {
     sf::RectangleShape box;
@@ -61,3 +61,11 @@ void setStatus(VisualizerUI& ui, const std::string& message);
 void drawTreeVisual(sf::RenderWindow& window, VisualizerUI& ui, const Tree23& tree,
                     const std::vector<Tree23Node*>& highlightPath, bool found,
                     Tree23Node* currentHighlightedNode);
+
+void drawTreeSnapshot(sf::RenderWindow& window, VisualizerUI& ui,
+                      const TreeSnapshot& snapshot,
+                      Tree23Node* currentHighlightedNode);
+
+TreeSnapshot interpolateSnapshot(const TreeSnapshot& from,
+                                 const TreeSnapshot& to,
+                                 float t);

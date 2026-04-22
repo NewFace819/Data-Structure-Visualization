@@ -25,6 +25,7 @@ set(SOURCES
     src/VisualizerUI.cpp
     src/heap.cpp
     src/heapgroup.cpp
+    src/TreeSnapshot.cpp
 )
 
 add_executable(MySFMLApp main.cpp ${SOURCES})
