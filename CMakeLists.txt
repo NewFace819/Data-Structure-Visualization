@@ -1,7 +1,13 @@
-cmake_minimum_required(VERSION 3.10)
-project(MySFMLProject)
+cmake_minimum_required(VERSION 3.14)
+project(DataStructureVisualizer)
 
-set(SFML_DIR "${CMAKE_CURRENT_SOURCE_DIR}/SFML-2.6.2/lib/cmake/SFML")
+if(MINGW AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/build/_deps/sfml-build/SFMLConfig.cmake")
+    set(SFML_DIR "${CMAKE_CURRENT_SOURCE_DIR}/build/_deps/sfml-build")
+    set(SFML_RUNTIME_DIR "${CMAKE_CURRENT_SOURCE_DIR}/build/_deps/sfml-build/lib")
+else()
+    set(SFML_DIR "${CMAKE_CURRENT_SOURCE_DIR}/SFML-2.6.2/lib/cmake/SFML")
+    set(SFML_RUNTIME_DIR "${CMAKE_CURRENT_SOURCE_DIR}/SFML-2.6.2/bin")
+endif()
 
 find_package(SFML 2.6 COMPONENTS graphics window system audio network REQUIRED)
 
@@ -12,6 +18,7 @@ set(SOURCES
     src/Button.cpp
     src/CodeBox.cpp
     src/GraphGroup.cpp
+    src/GraphSidebar.cpp
     src/HashTableGroup.cpp
     src/InputBox.cpp
     src/LinkedListGroup.cpp
@@ -25,6 +32,9 @@ set(SOURCES
     src/VisualizerUI.cpp
     src/heap.cpp
     src/heapgroup.cpp
+    src/graph/AStar.cpp
+    src/graph/GraphModel.cpp
+    src/graph/GraphTypes.cpp
 )
 
 add_executable(MySFMLApp main.cpp ${SOURCES})
@@ -34,7 +44,7 @@ target_link_libraries(MySFMLApp sfml-graphics sfml-window sfml-system)
 if(WIN32)
     add_custom_command(TARGET MySFMLApp POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${CMAKE_CURRENT_SOURCE_DIR}/SFML-2.6.2/bin"
+    "${SFML_RUNTIME_DIR}"
         $<TARGET_FILE_DIR:MySFMLApp>)
 endif()
 
