@@ -1,5 +1,6 @@
 #pragma once
 #include "VisualizerState.h"
+#include "Button.h"
 
 class TreeGroup : public VisualizerState
 {
@@ -11,4 +12,7 @@ public:
     void handleInput(const sf::Event& event) override;
     void update(float dt) override;
     void draw(sf::RenderWindow& window) override;
+
+private:
+    Button m_tree23Button;
 };

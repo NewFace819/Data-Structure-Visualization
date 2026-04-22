@@ -83,17 +83,25 @@ void Button::setText(const std::string& text)
 
 void Button::handleEvent(const sf::Event& event, const sf::RenderWindow& window)
 {
+    sf::Vector2i mousePixel = sf::Mouse::getPosition(window);
+    sf::Vector2f mousePos(static_cast<float>(mousePixel.x), static_cast<float>(mousePixel.y));
+    bool isInside = m_shape.getGlobalBounds().contains(mousePos);
+
     if (event.type == sf::Event::MouseButtonPressed && event.mouseButton.button == sf::Mouse::Left)
     {
-        if (m_isHovered && m_callback)
+        if (isInside)
         {
             m_shape.setFillColor(m_activeColor);
-            m_callback();
+
+            if (m_callback)
+            {
+                m_callback();
+            }
         }
     }
     else if (event.type == sf::Event::MouseButtonReleased && event.mouseButton.button == sf::Mouse::Left)
     {
-        if (m_isHovered)
+        if (isInside)
         {
             m_shape.setFillColor(m_hoverColor);
         }

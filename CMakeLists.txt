@@ -35,9 +35,12 @@ set(SOURCES
     src/graph/AStar.cpp
     src/graph/GraphModel.cpp
     src/graph/GraphTypes.cpp
+    src/Tree23State.cpp
 )
 
 add_executable(MySFMLApp main.cpp ${SOURCES})
+
+target_compile_features(MySFMLApp PRIVATE cxx_std_17)
 
 target_link_libraries(MySFMLApp sfml-graphics sfml-window sfml-system)
 

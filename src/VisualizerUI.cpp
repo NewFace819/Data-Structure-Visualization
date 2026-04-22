@@ -442,6 +442,122 @@ void drawTreeRecursive(sf::RenderWindow& window, const sf::Font& font, Tree23Nod
     }
 }
 
+const VisualNode* findVisualNodeById(const TreeSnapshot& snapshot, const std::string& id)
+{
+    for (int i = 0; i < (int)snapshot.nodes.size(); i++)
+    {
+        if (snapshot.nodes[i].id == id)
+        {
+            return &snapshot.nodes[i];
+        }
+    }
+
+    return nullptr;
+}
+
+TreeSnapshot interpolateSnapshot(const TreeSnapshot& from,
+                                 const TreeSnapshot& to,
+                                 float t)
+{
+    TreeSnapshot result;
+
+    if (t < 0.f)
+    {
+        t = 0.f;
+    }
+    if (t > 1.f)
+    {
+        t = 1.f;
+    }
+
+    for (int i = 0; i < (int)to.nodes.size(); i++)
+    {
+        VisualNode node = to.nodes[i];
+
+        const VisualNode* fromNode = findVisualNodeById(from, to.nodes[i].id);
+
+        if (fromNode != nullptr)
+        {
+            node.x = fromNode->x + (to.nodes[i].x - fromNode->x) * t;
+            node.y = fromNode->y + (to.nodes[i].y - fromNode->y) * t;
+        }
+
+        result.nodes.push_back(node);
+    }
+
+    result.edges = to.edges;
+    return result;
+}
+
+void drawSnapshotNode(sf::RenderWindow& window, const sf::Font& font,
+                      const VisualNode& node, bool isCurrent)
+{
+    float keyWidth = 55.f;
+    float nodeHeight = 45.f;
+    float totalWidth = keyWidth * (float)node.keyCount;
+    float leftX = node.x - totalWidth / 2.f;
+    float topY = node.y;
+
+    sf::RectangleShape box;
+    box.setSize(sf::Vector2f(totalWidth, nodeHeight));
+    box.setPosition(sf::Vector2f(leftX, topY));
+    box.setFillColor(sf::Color::White);
+
+    if (node.isOverflow)
+    {
+        box.setFillColor(sf::Color(255, 220, 220));
+    }
+    else if (node.isNewNode)
+    {
+        box.setFillColor(sf::Color(220, 255, 220));
+    }
+
+    if (isCurrent || node.isHighlighted)
+    {
+        box.setOutlineThickness(4.f);
+        box.setOutlineColor(sf::Color(0, 180, 0));
+    }
+    else {
+        box.setOutlineThickness(2.f);
+        box.setOutlineColor(sf::Color::Black);
+    }
+
+    window.draw(box);
+
+    if (node.keyCount == 2)
+    {
+        sf::Vertex divider[] =
+        {
+            sf::Vertex(sf::Vector2f(leftX + keyWidth, topY), sf::Color::Black),
+            sf::Vertex(sf::Vector2f(leftX + keyWidth, topY + nodeHeight), sf::Color::Black)
+        };
+        window.draw(divider, 2, sf::Lines);
+    }
+
+    sf::Text text1;
+    text1.setFont(font);
+    text1.setCharacterSize(22);
+    text1.setFillColor(sf::Color::Black);
+    text1.setString(std::to_string(node.keys[0]));
+    sf::FloatRect b1 = text1.getLocalBounds();
+    text1.setOrigin(b1.left + b1.width / 2.f, b1.top + b1.height / 2.f);
+    text1.setPosition(sf::Vector2f(leftX + keyWidth / 2.f, topY + nodeHeight / 2.f));
+    window.draw(text1);
+
+    if (node.keyCount == 2)
+    {
+        sf::Text text2;
+        text2.setFont(font);
+        text2.setCharacterSize(22);
+        text2.setFillColor(sf::Color::Black);
+        text2.setString(std::to_string(node.keys[1]));
+        sf::FloatRect b2 = text2.getLocalBounds();
+        text2.setOrigin(b2.left + b2.width / 2.f, b2.top + b2.height / 2.f);
+        text2.setPosition(sf::Vector2f(leftX + keyWidth + keyWidth / 2.f, topY + nodeHeight / 2.f));
+        window.draw(text2);
+    }
+}
+
 void drawTreeVisual(sf::RenderWindow& window, VisualizerUI& ui, const Tree23& tree,
                     const std::vector<Tree23Node*>& highlightPath, bool found,
                     Tree23Node* currentHighlightedNode)
@@ -471,3 +587,46 @@ void drawTreeVisual(sf::RenderWindow& window, VisualizerUI& ui, const Tree23& tr
 
     drawTreeRecursive(window, *font, root, startX, startY, startOffset, highlightPath, found, currentHighlightedNode);
 }
+
+void drawTreeSnapshot(sf::RenderWindow& window, VisualizerUI& ui,
+                      const TreeSnapshot& snapshot)
+{
+    if (snapshot.nodes.empty())
+    {
+        window.draw(ui.treePlaceholderText);
+        return;
+    }
+
+    const sf::Font* font = ui.treePlaceholderText.getFont();
+    if (font == nullptr)
+    {
+        return;
+    }
+
+    for (int i = 0; i < (int)snapshot.edges.size(); i++)
+    {
+        const VisualNode* parentNode = findVisualNodeById(snapshot, snapshot.edges[i].parentId);
+        const VisualNode* childNode = findVisualNodeById(snapshot, snapshot.edges[i].childId);
+
+        if (parentNode == nullptr || childNode == nullptr)
+        {
+            continue;
+        }
+
+        sf::Vertex line[] =
+        {
+            sf::Vertex(sf::Vector2f(parentNode->x, parentNode->y + 45.f), sf::Color::Black),
+            sf::Vertex(sf::Vector2f(childNode->x, childNode->y), sf::Color::Black)
+        };
+        window.draw(line, 2, sf::Lines);
+    }
+
+    for (int i = 0; i < (int)snapshot.nodes.size(); i++)
+    {
+        drawSnapshotNode(window, *font, snapshot.nodes[i], false);
+    }
+}
+
+TreeSnapshot interpolateSnapshot(const TreeSnapshot& from,
+                                 const TreeSnapshot& to,
+                                 float t);
