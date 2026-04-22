@@ -63,8 +63,7 @@ void drawTreeVisual(sf::RenderWindow& window, VisualizerUI& ui, const Tree23& tr
                     Tree23Node* currentHighlightedNode);
 
 void drawTreeSnapshot(sf::RenderWindow& window, VisualizerUI& ui,
-                      const TreeSnapshot& snapshot,
-                      Tree23Node* currentHighlightedNode);
+                      const TreeSnapshot& snapshot);
 
 TreeSnapshot interpolateSnapshot(const TreeSnapshot& from,
                                  const TreeSnapshot& to,

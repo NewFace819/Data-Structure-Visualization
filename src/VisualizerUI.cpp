@@ -503,7 +503,16 @@ void drawSnapshotNode(sf::RenderWindow& window, const sf::Font& font,
     box.setPosition(sf::Vector2f(leftX, topY));
     box.setFillColor(sf::Color::White);
 
-    if (isCurrent)
+    if (node.isOverflow)
+    {
+        box.setFillColor(sf::Color(255, 220, 220));
+    }
+    else if (node.isNewNode)
+    {
+        box.setFillColor(sf::Color(220, 255, 220));
+    }
+
+    if (isCurrent || node.isHighlighted)
     {
         box.setOutlineThickness(4.f);
         box.setOutlineColor(sf::Color(0, 180, 0));
@@ -580,8 +589,7 @@ void drawTreeVisual(sf::RenderWindow& window, VisualizerUI& ui, const Tree23& tr
 }
 
 void drawTreeSnapshot(sf::RenderWindow& window, VisualizerUI& ui,
-                      const TreeSnapshot& snapshot,
-                      Tree23Node* currentHighlightedNode)
+                      const TreeSnapshot& snapshot)
 {
     if (snapshot.nodes.empty())
     {
@@ -615,27 +623,7 @@ void drawTreeSnapshot(sf::RenderWindow& window, VisualizerUI& ui,
 
     for (int i = 0; i < (int)snapshot.nodes.size(); i++)
     {
-        bool isCurrent = false;
-
-        if (currentHighlightedNode != nullptr)
-        {
-            if (snapshot.nodes[i].keyCount == currentHighlightedNode->keyCount)
-            {
-                if (snapshot.nodes[i].keys[0] == currentHighlightedNode->keys[0])
-                {
-                    if (snapshot.nodes[i].keyCount == 1)
-                    {
-                        isCurrent = true;
-                    }
-                    else if (snapshot.nodes[i].keys[1] == currentHighlightedNode->keys[1])
-                    {
-                        isCurrent = true;
-                    }
-                }
-            }
-        }
-
-        drawSnapshotNode(window, *font, snapshot.nodes[i], isCurrent);
+        drawSnapshotNode(window, *font, snapshot.nodes[i], false);
     }
 }
 

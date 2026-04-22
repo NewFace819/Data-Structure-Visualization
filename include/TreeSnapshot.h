@@ -10,6 +10,10 @@ struct VisualNode
     int keys[2];
     float x;
     float y;
+
+    bool isHighlighted;
+    bool isOverflow;
+    bool isNewNode;
 };
 
 struct VisualEdge
@@ -22,4 +26,10 @@ struct TreeSnapshot
 {
     std::vector<VisualNode> nodes;
     std::vector<VisualEdge> edges;
+};
+
+struct SnapshotSequence
+{
+    std::vector<TreeSnapshot> frames;
+    std::vector<std::string> labels;
 };

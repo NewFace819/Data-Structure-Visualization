@@ -220,6 +220,9 @@ std::string buildSnapshotRecursive(Tree23Node* node,
     visualNode.keys[1] = (node->keyCount == 2 ? node->keys[1] : 0);
     visualNode.x = centerX;
     visualNode.y = y;
+    visualNode.isHighlighted = false;
+    visualNode.isOverflow = false;
+    visualNode.isNewNode = false;
 
     snapshot.nodes.push_back(visualNode);
 
@@ -288,6 +291,197 @@ TreeSnapshot buildSnapshotFromTree(const Tree23& tree)
 
     return snapshot;
 }
+
+VisualNode* findMutableVisualNodeById(TreeSnapshot& snapshot, const std::string& id)
+{
+    for (int i = 0; i < (int)snapshot.nodes.size(); i++)
+    {
+        if (snapshot.nodes[i].id == id)
+        {
+            return &snapshot.nodes[i];
+        }
+    }
+
+    return nullptr;
+}
+
+SnapshotSequence buildInsertSequence(const Tree23& tree, int value)
+{
+    SnapshotSequence sequence;
+
+    TreeSnapshot baseSnapshot = buildSnapshotFromTree(tree);
+    sequence.frames.push_back(baseSnapshot);
+    sequence.labels.push_back("Start insert");
+
+    std::vector<Tree23Node*> path = tree.getInsertPath(value);
+
+    for (int i = 0; i < (int)path.size(); i++)
+    {
+        TreeSnapshot stepSnapshot = buildSnapshotFromTree(tree);
+
+        std::string nodeId;
+        if (i == 0)
+        {
+            nodeId = "root";
+        }
+        else {
+            nodeId = "root";
+            for (int j = 1; j <= i; j++)
+            {
+                Tree23Node* parent = path[j - 1];
+                Tree23Node* child = path[j];
+
+                int childIndex = 0;
+                for (int c = 0; c < 3; c++)
+                {
+                    if (parent->child[c] == child)
+                    {
+                        childIndex = c;
+                        break;
+                    }
+                }
+
+                nodeId += "_" + std::to_string(childIndex);
+            }
+        }
+
+        VisualNode* visualNode = findMutableVisualNodeById(stepSnapshot, nodeId);
+        if (visualNode != nullptr)
+        {
+            visualNode->isHighlighted = true;
+        }
+
+        sequence.frames.push_back(stepSnapshot);
+        if (i == 0)
+        {
+            sequence.labels.push_back("visit root");
+        }
+        else {
+            sequence.labels.push_back("visit node");
+        }
+    }
+
+    if (!path.empty())
+    {
+        Tree23Node* leaf = path.back();
+
+        if (leaf->keyCount == 2)
+        {
+            TreeSnapshot overflowSnapshot = buildSnapshotFromTree(tree);
+
+            std::string nodeId;
+            if (path.size() == 1)
+            {
+                nodeId = "root";
+            }
+            else {
+                nodeId = "root";
+                for (int j = 1; j < (int)path.size(); j++)
+                {
+                    Tree23Node* parent = path[j - 1];
+                    Tree23Node* child = path[j];
+
+                    int childIndex = 0;
+                    for (int c = 0; c < 3; c++)
+                    {
+                        if (parent->child[c] == child)
+                        {
+                            childIndex = c;
+                            break;
+                        }
+                    }
+
+                    nodeId += "_" + std::to_string(childIndex);
+                }
+            }
+
+            VisualNode* overflowNode = findMutableVisualNodeById(overflowSnapshot, nodeId);
+            if (overflowNode != nullptr)
+            {
+                overflowNode->isOverflow = true;
+                overflowNode->isHighlighted = true;
+            }
+
+            sequence.frames.push_back(overflowSnapshot);
+            sequence.labels.push_back("Split leaf");
+        }
+    }
+
+    Tree23 tempTree;
+
+    std::vector<int> inorderValues = tree.getInorder();
+    for (int i = 0; i < (int)inorderValues.size(); i++)
+    {
+        tempTree.insert(inorderValues[i]);
+    }
+    tempTree.insert(value);
+
+    TreeSnapshot finalSnapshot = buildSnapshotFromTree(tempTree);
+    sequence.frames.push_back(finalSnapshot);
+    sequence.labels.push_back("Finish insert");
+
+    return sequence;
+}
+
+void clearSnapshotHighlight(TreeSnapshot& snapshot)
+{
+    for (int i = 0; i < (int)snapshot.nodes.size(); i++)
+    {
+        snapshot.nodes[i].isHighlighted = false;
+        snapshot.nodes[i].isOverflow = false;
+        snapshot.nodes[i].isNewNode = false;
+    }
+}
+
+void highlightSnapshotNodeByPath(TreeSnapshot& snapshot, const std::string& nodeId)
+{
+    clearSnapshotHighlight(snapshot);
+
+    for (int i = 0; i < (int)snapshot.nodes.size(); i++)
+    {
+        if (snapshot.nodes[i].id == nodeId)
+        {
+            snapshot.nodes[i].isHighlighted = true;
+            return;
+        }
+    }
+}
+
+std::string buildPathIdFromSearchPath(const std::vector<Tree23Node*>& path, int stepIndex)
+{
+    if (path.empty() || stepIndex < 0 || stepIndex >= (int)path.size())
+    {
+        return "";
+    }
+
+    if (stepIndex == 0)
+    {
+        return "root";
+    }
+
+    std::string nodeId = "root";
+
+    for (int i = 1; i <= stepIndex; i++)
+    {
+        Tree23Node* parent = path[i - 1];
+        Tree23Node* child = path[i];
+
+        int childIndex = 0;
+        for (int c = 0; c < 3; c++)
+        {
+            if (parent->child[c] == child)
+            {
+                childIndex = c;
+                break;
+            }
+        }
+
+        nodeId += "_" + std::to_string(childIndex);
+    }
+
+    return nodeId;
+}
+
 int main()
 {
     srand((unsigned int)time(nullptr));
@@ -315,6 +509,9 @@ int main()
     float snapshotTransitionDuration = 0.45f;
 
     sf::Clock snapshotTransitionClock;
+    SnapshotSequence currentSequence;   
+    bool isSequencePlaying = false;
+    int currentSequenceIndex = 0;
     currentSnapshot = buildSnapshotFromTree(tree);
 
     std::vector<Tree23Node*> highlightPath;
@@ -390,6 +587,8 @@ int main()
 
                             insertPath = tree.getInsertPath(value);
                             insertSteps = tree.getInsertSteps(value);
+                            currentSequence = buildInsertSequence(tree, value);
+                            currentSequenceIndex = 0;
 
                             pendingInsertValue = value;
                             currentInsertStep = 0;
@@ -402,7 +601,11 @@ int main()
                                 currentHighlightedNode = insertPath[0];
                             }
 
-                            if (!insertSteps.empty())
+                            if (!currentSequence.labels.empty())
+                            {
+                                updateAnimationText(ui, "Animation: " + currentSequence.labels[0], speedLabel);
+                            }
+                            else if (!insertSteps.empty())
                             {
                                 updateAnimationText(ui, "Animation: " + insertSteps[0].action, speedLabel);
                             }
@@ -454,6 +657,7 @@ int main()
                                 currentAnimationStep = 0;
                                 highlightPath.push_back(fullSearchPath[0]);
                                 currentHighlightedNode = fullSearchPath[0];
+                                highlightSnapshotNodeByPath(currentSnapshot, buildPathIdFromSearchPath(fullSearchPath, 0));
 
                                 if ((int)fullSearchPath.size() > 1)
                                 {
@@ -539,12 +743,14 @@ int main()
                             {
                                 setStatus(ui, "Update successful");
                                 currentSnapshot = buildSnapshotFromTree(tree);
+                                clearSnapshotHighlight(currentSnapshot);
                                 ui.inputBuffer = "";
                                 ui.inputText.setString("");
 
                                 resetInsertPathState(currentHighlightedNode, insertPath);
 
                                 resetAnimation(highlightPath, fullSearchPath,
+                                    
                                                currentAnimationStep, isPlaying,
                                                searchFound, ui);
 
@@ -564,6 +770,7 @@ int main()
                     {
                         tree.clear();
                         currentSnapshot = buildSnapshotFromTree(tree);
+                        clearSnapshotHighlight(currentSnapshot);
                         ui.inputBuffer = "";
                         ui.inputText.setString("");
                         setStatus(ui, "Tree reset");
@@ -585,6 +792,7 @@ int main()
                     {
                         initializeRandomTree(tree);
                         currentSnapshot = buildSnapshotFromTree(tree);
+                        clearSnapshotHighlight(currentSnapshot);
 
                         ui.inputBuffer = "";
                         ui.inputText.setString("");
@@ -607,6 +815,7 @@ int main()
                     {
                         initializeSampleTree(tree);
                         currentSnapshot = buildSnapshotFromTree(tree);
+                        clearSnapshotHighlight(currentSnapshot);
 
                         ui.inputBuffer = "";
                         ui.inputText.setString("");
@@ -716,6 +925,8 @@ int main()
 
                         insertPath = tree.getInsertPath(value);
                         insertSteps = tree.getInsertSteps(value);
+                        currentSequence = buildInsertSequence(tree, value);
+                        currentSequenceIndex = 0;
 
                         pendingInsertValue = value;
                         currentInsertStep = 0;
@@ -752,25 +963,27 @@ int main()
                 if (currentInsertStep + 1 < (int)insertSteps.size())
                 {
                     currentInsertStep++;
-                    updateAnimationText(ui, "Animation: " + insertSteps[currentInsertStep].action, speedLabel);
-
-                    if (currentInsertStep < (int)insertPath.size())
-                    {
-                        highlightPath.clear();
-                        highlightPath.push_back(insertPath[currentInsertStep]);
-                        currentHighlightedNode = insertPath[currentInsertStep];
-                    }
                 }
-                else {
+
+                if (currentSequenceIndex + 1 < (int)currentSequence.frames.size())
+                {
                     snapshotFrom = currentSnapshot;
-
-                    tree.insert(pendingInsertValue);
-
-                    snapshotTo = buildSnapshotFromTree(tree);
+                    snapshotTo = currentSequence.frames[currentSequenceIndex + 1];
 
                     isSnapshotTransitionPlaying = true;
                     snapshotTransitionProgress = 0.f;
                     snapshotTransitionClock.restart();
+
+                    currentSequenceIndex++;
+
+                    if (currentSequenceIndex < (int)currentSequence.labels.size())
+                    {
+                        updateAnimationText(ui, "Animation: " + currentSequence.labels[currentSequenceIndex], speedLabel);
+                    }
+                }
+                else {
+                    tree.insert(pendingInsertValue);
+                    currentSnapshot = buildSnapshotFromTree(tree);
 
                     ui.inputBuffer = "";
                     ui.inputText.setString("");
@@ -781,7 +994,12 @@ int main()
                                          isInsertPlaying, pendingInsertValue, ui, speedLabel);
 
                     highlightPath.clear();
+                    currentSequence.frames.clear();
+                    currentSequence.labels.clear();
+                    currentSequenceIndex = 0;
+
                     updateAnimationText(ui, "Animation: finished insert", speedLabel);
+                    clearSnapshotHighlight(currentSnapshot);
                 }
             }
         }
@@ -811,6 +1029,7 @@ int main()
                     isDeletePlaying = false;
                     pendingDeleteValue = 0;
                     updateAnimationText(ui, "Animation: finished delete", speedLabel);
+                    clearSnapshotHighlight(currentSnapshot);
 
                     highlightPath.clear();
                     fullSearchPath.clear();
@@ -834,6 +1053,7 @@ int main()
                     highlightPath.clear();
                     highlightPath.push_back(fullSearchPath[currentAnimationStep]);
                     currentHighlightedNode = fullSearchPath[currentAnimationStep];
+                    highlightSnapshotNodeByPath(currentSnapshot, buildPathIdFromSearchPath(fullSearchPath, currentAnimationStep));
                 }
                 else {
                     isPlaying = false;
@@ -846,6 +1066,14 @@ int main()
                     }
                     else {
                         currentHighlightedNode = nullptr;
+                    }
+
+                    if (!fullSearchPath.empty())
+                    {
+                        highlightSnapshotNodeByPath(currentSnapshot, buildPathIdFromSearchPath(fullSearchPath, (int)fullSearchPath.size() - 1));
+                    }
+                    else {
+                        clearSnapshotHighlight(currentSnapshot);
                     }
 
                     updateAnimationText(ui, "Animation: finished", speedLabel);
@@ -877,12 +1105,12 @@ int main()
         window.clear();
         drawUI(window, ui);
         if (isSnapshotTransitionPlaying)
-        {
+        {   
             TreeSnapshot interpolated = interpolateSnapshot(snapshotFrom, snapshotTo, snapshotTransitionProgress);
-            drawTreeSnapshot(window, ui, interpolated, currentHighlightedNode);
+            drawTreeSnapshot(window, ui, interpolated);
         }
         else {
-            drawTreeSnapshot(window, ui, currentSnapshot, currentHighlightedNode);
+            drawTreeSnapshot(window, ui, currentSnapshot);
         }
         window.display();
     }
