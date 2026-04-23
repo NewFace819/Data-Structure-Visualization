@@ -17,7 +17,7 @@ public:
     void handleInput(const sf::Event& event) override;
     void update(float dt) override;
     void draw(sf::RenderWindow& window) override;
-    void showNotification(const std::string& message);
+    void showNotification(const std::string& message, sf::Color color = sf::Color(231, 76, 60));
 
 protected:
     App* m_app;
@@ -36,6 +36,7 @@ protected:
     sf::Text m_notifyText;
     float m_notifyTimer = 0.0f;
     float m_notifyAlpha = 0.0f;
+    sf::Color m_notifyColor = sf::Color(231, 76, 60);
 
     virtual void stepBack() {}
     virtual void stepForward() {}

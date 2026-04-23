@@ -130,6 +130,7 @@ private:
         int activeNodeIndex;
         int foundNodeIndex;
         std::string notificationMsg;
+        bool isSuccessMsg;
     };
     
     ListNode* m_head;
@@ -150,7 +151,7 @@ private:
     void rearrangeList();
     
     void prepNewOperation();
-    void pushStep(int blockId, int highlightLine, int activeIdx, int foundIdx = -1, const std::string& msg = "");
+    void pushStep(int blockId, int highlightLine, int activeIdx, int foundIdx = -1, const std::string& msg = "", bool isSuccessMsg = false);
     void loadState(int index);
     void clearList();
 

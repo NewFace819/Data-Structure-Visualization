@@ -110,9 +110,9 @@ void LinkedListGroup::prepNewOperation()
     }
 }
 
-void LinkedListGroup::pushStep(int blockId, int highlightLine, int activeIdx, int foundIdx, const std::string& msg)
+void LinkedListGroup::pushStep(int blockId, int highlightLine, int activeIdx, int foundIdx, const std::string& msg, bool isSuccessMsg)
 {
-    m_history.push_back({m_logicalList, blockId, highlightLine, activeIdx, foundIdx, msg});
+    m_history.push_back({m_logicalList, blockId, highlightLine, activeIdx, foundIdx, msg, isSuccessMsg});
 }
 
 void LinkedListGroup::initData(const std::string& input)
@@ -173,7 +173,7 @@ void LinkedListGroup::addNode(int val)
     if (m_logicalList.empty()) {
         pushStep(0, 2, -1); 
         m_logicalList.push_back(val);
-        pushStep(0, 2, 0); 
+        pushStep(0, 2, -1, 0, "Added " + std::to_string(val) + " successfully!", true); 
     } else {
         pushStep(0, 3, 0); 
         int currIdx = 0;
@@ -184,7 +184,7 @@ void LinkedListGroup::addNode(int val)
         }
         pushStep(0, 4, currIdx); 
         m_logicalList.push_back(val);
-        pushStep(0, 6, currIdx); 
+        pushStep(0, 6, -1, currIdx + 1, "Added " + std::to_string(val) + " successfully!", true);
     }
     m_isPaused = false; m_sidebar.setPlayButtonText("Pause");
 }
@@ -201,8 +201,9 @@ void LinkedListGroup::deleteNodeByValue(int val)
     
     pushStep(1, 2, 0); 
     if (m_logicalList[0] == val) {
+        pushStep(1, 2, -1, 0); 
         m_logicalList.erase(m_logicalList.begin());
-        pushStep(1, 2, -1); 
+        pushStep(1, 3, -1, -1, "Deleted " + std::to_string(val) + " successfully!", true); 
         m_isPaused = false; m_sidebar.setPlayButtonText("Pause");
         return;
     }
@@ -222,8 +223,9 @@ void LinkedListGroup::deleteNodeByValue(int val)
     
     if (found) {
         pushStep(1, 6, currIdx);
+        pushStep(1, 6, -1, currIdx + 1);
         m_logicalList.erase(m_logicalList.begin() + currIdx + 1);
-        pushStep(1, 7, currIdx);
+        pushStep(1, 7, -1, -1, "Deleted " + std::to_string(val) + " successfully!", true);
     } else {
         pushStep(1, 4, -1, -1, "Value " + std::to_string(val) + " not found!");
     }
@@ -249,7 +251,7 @@ void LinkedListGroup::searchNode(int val)
         pushStep(2, 3, currIdx); 
         pushStep(2, 4, currIdx); 
         if (m_logicalList[currIdx] == val) {
-            pushStep(2, 4, currIdx, currIdx); 
+            pushStep(2, 4, -1, currIdx, "Found " + std::to_string(val) + " at index " + std::to_string(currIdx) + "!", true); 
             m_isPaused = false; m_sidebar.setPlayButtonText("Pause");
             return;
         }
@@ -295,9 +297,10 @@ void LinkedListGroup::updateNode(const std::string& input)
         pushStep(3, 2, currIdx); 
         pushStep(3, 3, currIdx); 
         if (m_logicalList[currIdx] == oldVal) {
+            pushStep(3, 4, currIdx); 
+            pushStep(3, 4, -1, currIdx); 
             m_logicalList[currIdx] = newVal;
-            pushStep(3, 4, currIdx, currIdx); 
-            pushStep(3, 5, currIdx, currIdx); 
+            pushStep(3, 5, -1, currIdx, "Updated " + std::to_string(oldVal) + " to " + std::to_string(newVal) + "!", true); 
             m_isPaused = false; m_sidebar.setPlayButtonText("Pause"); return;
         }
         currIdx++;
@@ -336,7 +339,7 @@ void LinkedListGroup::loadState(int index)
     highlightCodeLine(state.codeHighlightLine);
 
     if (!state.notificationMsg.empty()) {
-        showNotification(state.notificationMsg);
+        showNotification(state.notificationMsg, state.isSuccessMsg ? sf::Color(46, 204, 113) : sf::Color(231, 76, 60));
     }
 
     std::vector<ListNode*> oldNodes;

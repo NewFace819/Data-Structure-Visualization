@@ -3,7 +3,6 @@
 #include "LinkedListGroup.h"
 #include "TreeGroup.h"
 #include "GraphGroup.h"
-#include "HashTableGroup.h"
 #include "heapgroup.h"
 #include "App.h"
 #include <iostream>
@@ -89,42 +88,12 @@ void MenuState::init()
         m_app->changeState(std::make_unique<GraphGroup>(m_app));
     });
 
-    float row2StartX = startX + (cardW + gapX) / 2.0f;
-
-    m_buttons.emplace_back(row2StartX, startY + cardH + gapY, cardW, cardH, "Hash Table", font);
-    setupCard(m_buttons.back());
-    m_buttons.back().setCallback([this]() {
-        m_app->changeState(std::make_unique<HashTableGroup>(m_app));
-    });
-
-    m_buttons.emplace_back(row2StartX + cardW + gapX, startY + cardH + gapY, cardW, cardH, "Heap", font);
+    m_buttons.emplace_back(startX + cardW + gapX, startY + cardH + gapY, cardW, cardH, "Heap", font);
     setupCard(m_buttons.back());
     m_buttons.back().setCallback([this]() {
         m_app->changeState(std::make_unique<HeapGroup>(m_app));
     });
 
-    if (m_llLogoTex.loadFromFile("assets/Linked_List_Logo.png"))
-    {
-        m_llLogoTex.setSmooth(true);
-        m_llLogoSprite.setTexture(m_llLogoTex);
-        sf::Vector2u texSize = m_llLogoTex.getSize();
-
-        float scaleY = 240.0f / (float)texSize.y;
-        float scaleX = 420.0f / (float)texSize.x;
-        float scale = std::min(scaleX, scaleY);
-
-        m_llLogoSprite.setScale(scale, scale);
-        m_llLogoSprite.setOrigin((float)texSize.x / 2.0f, (float)texSize.y / 2.0f);
-        m_hasLogo = true;
-
-        if (!m_buttons.empty())
-        {
-            m_buttons[0].setText("");
-        }
-    }
-    else {
-        m_hasLogo = false;
-    }
 }
 
 void MenuState::handleInput(const sf::Event& event)
@@ -146,55 +115,6 @@ void MenuState::update(float dt)
     }
 }
 
-namespace
-{
-    void drawLinkedListLogo(sf::RenderWindow& window, sf::Vector2f center)
-    {
-        sf::RectangleShape box(sf::Vector2f(24.0f, 16.0f));
-        box.setOrigin(12.0f, 8.0f);
-        box.setOutlineThickness(1.5f);
-        box.setOutlineColor(sf::Color(15, 23, 42));
-        box.setFillColor(sf::Color::White);
-
-        sf::RectangleShape ptrBg(sf::Vector2f(8.0f, 16.0f));
-        ptrBg.setOrigin(4.0f, 8.0f);
-        ptrBg.setFillColor(sf::Color(226, 232, 240));
-
-        sf::CircleShape dot(1.5f);
-        dot.setFillColor(sf::Color(15, 23, 42));
-        dot.setOrigin(1.5f, 1.5f);
-
-        auto drawNode = [&](float cx, float cy) {
-            box.setPosition(cx, cy); window.draw(box);
-            ptrBg.setPosition(cx + 8.0f, cy); window.draw(ptrBg);
-            dot.setPosition(cx + 8.0f, cy); window.draw(dot);
-        };
-
-        drawNode(center.x - 45.0f, center.y);
-        drawNode(center.x, center.y);
-        drawNode(center.x + 45.0f, center.y);
-
-        auto drawArr = [&](float cx) {
-            sf::RectangleShape arrLine(sf::Vector2f(21.0f, 1.5f));
-            arrLine.setPosition(cx + 8.0f, center.y - 0.75f);
-            arrLine.setFillColor(sf::Color(15, 23, 42));
-            window.draw(arrLine);
-
-            sf::ConvexShape ah;
-            ah.setPointCount(3);
-            ah.setPoint(0, sf::Vector2f(0.0f, -3.0f));
-            ah.setPoint(1, sf::Vector2f(4.0f, 0.0f));
-            ah.setPoint(2, sf::Vector2f(0.0f, 3.0f));
-            ah.setFillColor(sf::Color(15, 23, 42));
-            ah.setPosition(cx + 29.0f, center.y);
-            window.draw(ah);
-        };
-
-        drawArr(center.x - 45.0f);
-        drawArr(center.x);
-    }
-}
-
 void MenuState::draw(sf::RenderWindow& window)
 {
     sf::Vector2u size = m_app->getWindow().getSize();
@@ -212,18 +132,4 @@ void MenuState::draw(sf::RenderWindow& window)
         btn.draw(window);
     }
 
-    float cardW = 260.0f;
-    float cardH = 160.0f;
-    float gapX = 40.0f;
-    float startX = (winW - (3.0f * cardW + 2.0f * gapX)) / 2.0f;
-    float startY = 320.0f;
-
-    if (m_hasLogo)
-    {
-        m_llLogoSprite.setPosition(startX + cardW / 2.0f, startY + cardH / 2.0f);
-        window.draw(m_llLogoSprite);
-    }
-    else {
-        drawLinkedListLogo(window, sf::Vector2f(startX + cardW / 2.0f, startY + 50.0f));
-    }
 }

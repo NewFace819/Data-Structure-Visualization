@@ -102,7 +102,9 @@ void VisualizerState::update(float dt) {
     }
 
     uint8_t alpha = (uint8_t)m_notifyAlpha;
-    m_notifyBg.setFillColor(sf::Color(231, 76, 60, alpha));
+    sf::Color c = m_notifyColor;
+    c.a = alpha;
+    m_notifyBg.setFillColor(c);
     m_notifyBg.setOutlineColor(sf::Color(255, 255, 255, (uint8_t)(alpha * 0.5f)));
     m_notifyText.setFillColor(sf::Color(255, 255, 255, alpha));
 }
@@ -124,7 +126,8 @@ void VisualizerState::drawChrome(sf::RenderWindow& window) {
     }
 }
 
-void VisualizerState::showNotification(const std::string& message) {
+void VisualizerState::showNotification(const std::string& message, sf::Color color) {
+    m_notifyColor = color;
     m_notifyText.setString(message);
     m_notifyTimer = 3.0f;
     m_notifyAlpha = 1.0f;

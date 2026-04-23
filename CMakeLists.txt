@@ -39,7 +39,6 @@ set(SOURCES
     src/CodeBox.cpp
     src/GraphGroup.cpp
     src/GraphSidebar.cpp
-    src/HashTableGroup.cpp
     src/InputBox.cpp
     src/LinkedListGroup.cpp
     src/MenuState.cpp

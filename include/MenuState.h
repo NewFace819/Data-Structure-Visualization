@@ -24,8 +24,4 @@ private:
     sf::Text m_titleText;
     sf::Text m_subtitleText;
     std::vector<Button> m_buttons;
-
-    sf::Texture m_llLogoTex;
-    sf::Sprite m_llLogoSprite;
-    bool m_hasLogo = false;
 };
