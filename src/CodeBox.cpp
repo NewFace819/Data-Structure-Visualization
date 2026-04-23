@@ -47,6 +47,28 @@ void CodeBox::setTitle(const std::string& title)
     m_titleText.setString(title);
 }
 
+void CodeBox::setBounds(float x, float y, float width, float height)
+{
+    m_x = x;
+    m_y = y;
+    m_width = width;
+    m_height = height;
+
+    m_background.setPosition(m_x, m_y);
+    m_background.setSize(sf::Vector2f(m_width, m_height));
+    m_titleText.setPosition(m_x + 15.0f, m_y + 10.0f);
+    m_highlightRect.setSize(sf::Vector2f(m_width - 20.0f, 22.0f));
+
+    const float startY = m_y + 40.0f;
+    for (size_t i = 0; i < m_lineTexts.size(); ++i) {
+        m_lineTexts[i].setPosition(m_x + 20.0f, startY + i * 22.0f);
+    }
+
+    if (m_highlightedLine >= 0 && m_highlightedLine < static_cast<int>(m_lineTexts.size())) {
+        m_highlightRect.setPosition(m_x + 10.0f, m_y + 40.0f + m_highlightedLine * 22.0f);
+    }
+}
+
 void CodeBox::draw(sf::RenderWindow& window) const
 {
     window.draw(m_background);

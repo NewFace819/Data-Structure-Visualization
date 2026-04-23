@@ -546,8 +546,6 @@ void LinkedListGroup::drawArrow(sf::RenderWindow& window, sf::Vector2f start, sf
 
 void LinkedListGroup::draw(sf::RenderWindow& window)
 {
-    VisualizerState::draw(window);
-
     for (auto* node : m_dyingNodes) {
         window.draw(node->leftBg);
         window.draw(node->rightBg);
@@ -577,5 +575,6 @@ void LinkedListGroup::draw(sf::RenderWindow& window)
         curr = curr->next;
     }
 
+    drawChrome(window);
     m_clearBtn.draw(window);
 }

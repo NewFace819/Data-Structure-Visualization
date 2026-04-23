@@ -2,6 +2,8 @@
 
 #include "App.h"
 
+#include <cmath>
+
 namespace {
 
 const std::vector<std::string> kAStarCode = {"AStar(start, goal):",
@@ -24,6 +26,7 @@ void GraphGroup::init() {
     VisualizerState::init();
 
     m_graphModel.initializeGrid(20, 30);
+    configureLayout();
     setupToolbox();
     setCode(kAStarCode);
     highlightCodeLine(-1);
@@ -61,6 +64,27 @@ void GraphGroup::init() {
 
     m_cellShape.setSize(sf::Vector2f(m_cellSize - 1.0f, m_cellSize - 1.0f));
     m_cellShape.setFillColor(sf::Color::White);
+}
+
+void GraphGroup::configureLayout() {
+    const sf::Vector2u windowSize = m_app->getWindow().getSize();
+    const float topPadding = 20.0f;
+    const float leftPanelWidth = 260.0f;
+    const float contentGap = 20.0f;
+    const float rightPanelWidth = 300.0f;
+
+    const float codeX = static_cast<float>(windowSize.x) - rightPanelWidth - topPadding;
+    const float codeY = 80.0f;
+    const float codeHeight = static_cast<float>(windowSize.y) - codeY - topPadding;
+
+    m_codeBoxBounds = sf::FloatRect(codeX, codeY, rightPanelWidth, codeHeight);
+    m_codeBox.setBounds(codeX, codeY, rightPanelWidth, codeHeight);
+
+    const float visualX = leftPanelWidth + topPadding;
+    const float visualY = 80.0f;
+    const float visualWidth = codeX - visualX - contentGap;
+    const float visualHeight = static_cast<float>(windowSize.y) - visualY - topPadding;
+    m_visualizationBounds = sf::FloatRect(visualX, visualY, visualWidth, visualHeight);
 }
 
 void GraphGroup::handleInput(const sf::Event& event) {
@@ -124,19 +148,29 @@ void GraphGroup::update(float dt) {
 }
 
 void GraphGroup::draw(sf::RenderWindow& window) {
+    drawToolbox(window);
+    drawGrid(window);
+
     window.draw(m_topBar);
     window.draw(m_titleText);
     m_backButton.draw(window);
     m_graphSidebar.draw(window);
     m_codeBox.draw(window);
-
-    drawToolbox(window);
-    drawGrid(window);
 }
 
 void GraphGroup::setupToolbox() {
-    m_toolboxBackground.setPosition(290.0f, 90.0f);
-    m_toolboxBackground.setSize(sf::Vector2f(720.0f, 78.0f));
+    const float toolboxHeight = 78.0f;
+    const float innerPadding = 18.0f;
+    const float buttonGap = 12.0f;
+    const float titleColumnWidth = 120.0f;
+    const float buttonY = m_visualizationBounds.top + 16.0f;
+    const float buttonX = m_visualizationBounds.left + innerPadding + titleColumnWidth;
+    const float availableButtonWidth =
+        m_visualizationBounds.width - titleColumnWidth - innerPadding * 2.0f - buttonGap * 3.0f;
+    const float buttonWidth = availableButtonWidth / 4.0f;
+
+    m_toolboxBackground.setPosition(m_visualizationBounds.left, m_visualizationBounds.top);
+    m_toolboxBackground.setSize(sf::Vector2f(m_visualizationBounds.width, toolboxHeight));
     m_toolboxBackground.setFillColor(sf::Color(255, 255, 255, 235));
     m_toolboxBackground.setOutlineThickness(2.0f);
     m_toolboxBackground.setOutlineColor(sf::Color(226, 232, 240));
@@ -145,13 +179,16 @@ void GraphGroup::setupToolbox() {
     m_toolboxTitle.setString("Edit Tool");
     m_toolboxTitle.setCharacterSize(18);
     m_toolboxTitle.setFillColor(sf::Color(71, 85, 105));
-    m_toolboxTitle.setPosition(312.0f, 102.0f);
+    m_toolboxTitle.setPosition(m_visualizationBounds.left + innerPadding, m_visualizationBounds.top + 12.0f);
 
     m_toolButtons.clear();
-    m_toolButtons.emplace_back(430.0f, 106.0f, 120.0f, 38.0f, "Wall", m_app->getFont());
-    m_toolButtons.emplace_back(565.0f, 106.0f, 120.0f, 38.0f, "Start", m_app->getFont());
-    m_toolButtons.emplace_back(700.0f, 106.0f, 120.0f, 38.0f, "End", m_app->getFont());
-    m_toolButtons.emplace_back(835.0f, 106.0f, 120.0f, 38.0f, "Remove", m_app->getFont());
+    m_toolButtons.emplace_back(buttonX, buttonY, buttonWidth, 38.0f, "Wall", m_app->getFont());
+    m_toolButtons.emplace_back(buttonX + buttonWidth + buttonGap, buttonY, buttonWidth, 38.0f,
+                               "Start", m_app->getFont());
+    m_toolButtons.emplace_back(buttonX + 2.0f * (buttonWidth + buttonGap), buttonY, buttonWidth,
+                               38.0f, "End", m_app->getFont());
+    m_toolButtons.emplace_back(buttonX + 3.0f * (buttonWidth + buttonGap), buttonY, buttonWidth,
+                               38.0f, "Remove", m_app->getFont());
 
     m_toolButtons[0].setCallback([this]() {
         m_selectedTool = ToolSelection::Wall;
@@ -171,7 +208,20 @@ void GraphGroup::setupToolbox() {
     });
 
     refreshToolButtonStyles();
-    m_gridOrigin.y = 180.0f;
+
+    const float boardTop = m_visualizationBounds.top + toolboxHeight + 18.0f;
+    const float availableBoardHeight = m_visualizationBounds.height - toolboxHeight - 18.0f;
+    const float maxCellWidth = m_visualizationBounds.width / static_cast<float>(m_graphModel.cols());
+    const float maxCellHeight = availableBoardHeight / static_cast<float>(m_graphModel.rows());
+    m_cellSize = std::floor(std::min(maxCellWidth, maxCellHeight));
+    if (m_cellSize < 12.0f) {
+        m_cellSize = 12.0f;
+    }
+
+    const float boardWidth = m_graphModel.cols() * m_cellSize;
+    const float boardHeight = m_graphModel.rows() * m_cellSize;
+    m_gridOrigin.x = m_visualizationBounds.left + (m_visualizationBounds.width - boardWidth) / 2.0f;
+    m_gridOrigin.y = boardTop + (availableBoardHeight - boardHeight) / 2.0f;
 }
 
 void GraphGroup::refreshToolButtonStyles() {

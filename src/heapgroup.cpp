@@ -188,11 +188,11 @@ void HeapGroup::stepForward()
 
 void HeapGroup::draw(sf::RenderWindow& window)
 {
-	VisualizerState::draw(window);
 	const auto& steps = m_heap.getSteps();
 	if (!steps.empty() && m_currentStep < (int)steps.size()) {
 		drawTree(window, steps[m_currentStep]);
 	}
+	drawChrome(window);
 }
 
 void HeapGroup::changeColors(int ColorsId)
@@ -222,23 +222,25 @@ void HeapGroup::drawTree(sf::RenderWindow& window, const HeapStep& currentStep)
 	if (heap.empty()) return;
 
 	// Đặt Heap ở giữa màn hình (tính từ khoảng rìa Sidebar 260px đến hết màn hình)
-	float startX = (window.getSize().x + 260.0f) / 2.0f;
-	float startY = 150.0f;
-	float VerticalSpacing = 80.0f;
-	float HorizontalSpacing = 200.0f;
+	const sf::FloatRect canvas = getVisualizationBounds();
+	const int maxLevel = static_cast<int>(std::floor(std::log2(static_cast<float>(heap.size()))));
+	const float startY = canvas.top + 40.0f;
+	const float usableHeight = std::max(0.0f, canvas.height - 80.0f);
+	const float verticalSpacing = (maxLevel > 0)
+		? std::min(90.0f, usableHeight / static_cast<float>(maxLevel))
+		: 0.0f;
 
 	auto getPosition = [&](int index) -> sf::Vector2f {
-		if (index == 0) return { startX, startY };
-		int level = std::floor(std::log2(index + 1));
-		int maxNodesInLevel = std::pow(2, level);
-		int positionInLevel = index - (maxNodesInLevel - 1);
-
-		float levelHorizontalSpacing = HorizontalSpacing / std::pow(2, level);
-		float x = startX - (levelHorizontalSpacing * (maxNodesInLevel - 1)) / 2.0f + positionInLevel * levelHorizontalSpacing;
-		float y = startY + level * VerticalSpacing;
+		int level = static_cast<int>(std::floor(std::log2(index + 1)));
+		int nodesInLevel = 1 << level;
+		int firstIndexInLevel = nodesInLevel - 1;
+		int positionInLevel = index - firstIndexInLevel;
+		float laneWidth = canvas.width / static_cast<float>(nodesInLevel + 1);
+		float x = canvas.left + laneWidth * static_cast<float>(positionInLevel + 1);
+		float y = startY + static_cast<float>(level) * verticalSpacing;
 
 		return { x, y };
-		};
+	};
 
 	for (size_t i = 1; i < heap.size(); i++) {
 		int parentIndex = (i - 1) / 2;

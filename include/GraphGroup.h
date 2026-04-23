@@ -23,6 +23,7 @@ protected:
     void stepForward() override;
 
 private:
+    void configureLayout();
     enum class ToolSelection { Wall, Start, End, Remove };
 
     void setupToolbox();

@@ -1,31 +1,35 @@
 #include "VisualizerState.h"
-#include "MenuState.h"
+
 #include "App.h"
+#include "MenuState.h"
+
+namespace {
+constexpr float kTopBarHeight = 60.0f;
+constexpr float kSidebarWidth = 260.0f;
+constexpr float kCodeBoxTop = 500.0f;
+constexpr float kCanvasPadding = 30.0f;
+}  // namespace
 
 VisualizerState::VisualizerState(App* app, const std::string& dataStructureName)
     : m_app(app),
       m_dsName(dataStructureName),
       m_sidebar(app->getFont(), (float)app->getWindow().getSize().y),
-      m_codeBox(
-          app->getFont(),
-          260.0f,
-          (float)app->getWindow().getSize().y - 300.0f,
-          (float)app->getWindow().getSize().x - 260.0f,
-          220.0f
-      ),
-      m_backButton(
-          (float)app->getWindow().getSize().x - 130.0f,
-          10.0f,
-          100.0f,
-          40.0f,
-          "Back",
-          app->getFont()
-      )
-{
+      m_codeBox(app->getFont(), kSidebarWidth, kCodeBoxTop,
+                (float)app->getWindow().getSize().x - kSidebarWidth,
+                (float)app->getWindow().getSize().y - kCodeBoxTop),
+      m_backButton((float)app->getWindow().getSize().x - 130.0f, 10.0f, 100.0f, 40.0f, "Back",
+                   app->getFont()) {
+    const sf::Vector2u windowSize = m_app->getWindow().getSize();
+    m_codeBoxBounds =
+        sf::FloatRect(kSidebarWidth, kCodeBoxTop, static_cast<float>(windowSize.x) - kSidebarWidth,
+                      static_cast<float>(windowSize.y) - kCodeBoxTop);
+    m_visualizationBounds =
+        sf::FloatRect(kSidebarWidth + kCanvasPadding, kTopBarHeight + kCanvasPadding,
+                      static_cast<float>(windowSize.x) - kSidebarWidth - 2.0f * kCanvasPadding,
+                      kCodeBoxTop - kTopBarHeight - 2.0f * kCanvasPadding);
 }
 
-void VisualizerState::init()
-{
+void VisualizerState::init() {
     sf::Vector2u size = m_app->getWindow().getSize();
     float winW = (float)size.x;
     float winH = (float)size.y;
@@ -40,9 +44,7 @@ void VisualizerState::init()
     m_titleText.setFillColor(sf::Color::White);
     m_titleText.setPosition(30.0f, 15.0f);
 
-    m_backButton.setCallback([this]() {
-        m_app->changeState(std::make_unique<MenuState>(m_app));
-    });
+    m_backButton.setCallback([this]() { m_app->changeState(std::make_unique<MenuState>(m_app)); });
 
     m_sidebar.setPlayPauseCallback([this]() {
         m_isPaused = !m_isPaused;
@@ -72,15 +74,13 @@ void VisualizerState::init()
     (void)winH;
 }
 
-void VisualizerState::handleInput(const sf::Event& event)
-{
+void VisualizerState::handleInput(const sf::Event& event) {
     sf::RenderWindow& window = m_app->getWindow();
     m_sidebar.handleEvent(event, window);
     m_backButton.handleEvent(event, window);
 }
 
-void VisualizerState::update(float dt)
-{
+void VisualizerState::update(float dt) {
     sf::RenderWindow& window = m_app->getWindow();
 
     sf::Vector2i mousePixel = sf::Mouse::getPosition(window);
@@ -89,20 +89,15 @@ void VisualizerState::update(float dt)
     m_sidebar.update(mousePos);
     m_backButton.update(mousePos);
 
-    if (m_notifyTimer > 0.0f)
-    {
+    if (m_notifyTimer > 0.0f) {
         m_notifyTimer -= dt;
 
-        if (m_notifyTimer < 0.5f)
-        {
+        if (m_notifyTimer < 0.5f) {
             m_notifyAlpha = (m_notifyTimer / 0.5f) * 255.0f;
-        }
-        else if (m_notifyAlpha < 255.0f)
-        {
+        } else if (m_notifyAlpha < 255.0f) {
             m_notifyAlpha = std::min(255.0f, m_notifyAlpha + dt * 1000.0f);
         }
-    }
-    else {
+    } else {
         m_notifyAlpha = std::max(0.0f, m_notifyAlpha - dt * 1000.0f);
     }
 
@@ -112,23 +107,24 @@ void VisualizerState::update(float dt)
     m_notifyText.setFillColor(sf::Color(255, 255, 255, alpha));
 }
 
-void VisualizerState::draw(sf::RenderWindow& window)
-{
+void VisualizerState::draw(sf::RenderWindow& window) {
+    drawChrome(window);
+}
+
+void VisualizerState::drawChrome(sf::RenderWindow& window) {
     window.draw(m_topBar);
     window.draw(m_titleText);
     m_backButton.draw(window);
     m_sidebar.draw(window);
     m_codeBox.draw(window);
 
-    if (m_notifyAlpha > 0.0f)
-    {
+    if (m_notifyAlpha > 0.0f) {
         window.draw(m_notifyBg);
         window.draw(m_notifyText);
     }
 }
 
-void VisualizerState::showNotification(const std::string& message)
-{
+void VisualizerState::showNotification(const std::string& message) {
     m_notifyText.setString(message);
     m_notifyTimer = 3.0f;
     m_notifyAlpha = 1.0f;
@@ -138,16 +134,8 @@ void VisualizerState::showNotification(const std::string& message)
     float bgWidth = textBounds.width + padding * 2.0f;
     float bgHeight = textBounds.height + padding * 2.0f;
 
-    sf::Vector2u size = m_app->getWindow().getSize();
-    float winW = (float)size.x;
-    float winH = (float)size.y;
-
-    float cbX = 260.0f;
-    float cbY = winH - 300.0f;
-    float cbW = winW - 260.0f;
-
-    float posX = cbX + cbW - bgWidth - 10.0f;
-    float posY = cbY + 10.0f;
+    float posX = m_codeBoxBounds.left + m_codeBoxBounds.width - bgWidth - 10.0f;
+    float posY = m_codeBoxBounds.top + 10.0f;
 
     m_notifyBg.setSize(sf::Vector2f(bgWidth, bgHeight));
     m_notifyBg.setPosition(posX, posY);

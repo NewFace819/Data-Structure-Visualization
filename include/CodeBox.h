@@ -11,6 +11,7 @@ public:
     void setCode(const std::vector<std::string>& lines);
     void highlightLine(int lineIndex);
     void setTitle(const std::string& title);
+    void setBounds(float x, float y, float width, float height);
 
     void draw(sf::RenderWindow& window) const;
 

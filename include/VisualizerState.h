@@ -24,6 +24,8 @@ protected:
     std::string m_dsName;
     Sidebar m_sidebar;
     CodeBox m_codeBox;
+    sf::FloatRect m_visualizationBounds;
+    sf::FloatRect m_codeBoxBounds;
     sf::RectangleShape m_topBar;
     sf::Text m_titleText;
     Button m_backButton;
@@ -40,4 +42,7 @@ protected:
 
     void setCode(const std::vector<std::string>& code) { m_codeBox.setCode(code); }
     void highlightCodeLine(int line) { m_codeBox.highlightLine(line); }
+    const sf::FloatRect& getVisualizationBounds() const { return m_visualizationBounds; }
+    const sf::FloatRect& getCodeBoxBounds() const { return m_codeBoxBounds; }
+    void drawChrome(sf::RenderWindow& window);
 };
